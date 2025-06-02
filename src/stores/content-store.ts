@@ -100,9 +100,12 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     console.log('🔍 useContentStore.applyFilter() called with filter:', currentFilter);
     console.log(`📊 Applying filter to ${contents.length} total contents`);
     
-    // Si no hay filtros, mostrar todos los contenidos
-    if (Object.keys(currentFilter).length === 0 || 
-        Object.values(currentFilter).every(value => value === undefined || value === '' || value === null)) {
+    // Si no hay filtros activos, mostrar todos los contenidos
+    const hasActiveFilters = Object.values(currentFilter).some(value => 
+      value !== undefined && value !== '' && value !== null
+    );
+    
+    if (!hasActiveFilters) {
       console.log('📊 No active filters, showing all contents');
       set({ filteredContents: contents });
       return;

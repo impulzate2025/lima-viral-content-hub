@@ -1,3 +1,4 @@
+
 import Dexie, { Table } from 'dexie';
 import { ContentItem, Campaign, AppSettings, ExportRecord, ContentFilter } from '@/types';
 
@@ -100,7 +101,37 @@ const SAMPLE_CONTENTS: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>[] = [
   }
 ];
 
-// Función para inicializar datos de prueba
+// Función para forzar la carga de datos de prueba
+export const forceSampleDataLoad = async (): Promise<void> => {
+  console.log('🔍 Force loading sample data...');
+  
+  try {
+    // Limpiar contenidos existentes
+    await db.contents.clear();
+    console.log('🗑️ Cleared existing contents');
+    
+    const now = new Date();
+    const sampleContentsWithDates = SAMPLE_CONTENTS.map((content, index) => ({
+      ...content,
+      id: generateId(),
+      createdAt: new Date(now.getTime() - (6 - index) * 24 * 60 * 60 * 1000), // Diferentes fechas
+      updatedAt: new Date(now.getTime() - (5 - index) * 12 * 60 * 60 * 1000) // Diferentes fechas de actualización
+    }));
+    
+    await db.contents.bulkAdd(sampleContentsWithDates);
+    console.log(`✅ Force inserted ${sampleContentsWithDates.length} sample contents`);
+    
+    // Verificar que se insertaron correctamente
+    const count = await db.contents.count();
+    console.log(`📊 Current database count: ${count}`);
+    
+  } catch (error) {
+    console.error('❌ Error force loading sample data:', error);
+    throw error;
+  }
+};
+
+// Función para inicializar datos de prueba si no existen
 export const initializeSampleData = async (): Promise<void> => {
   console.log('🔍 Checking if sample data needs to be initialized...');
   
@@ -110,17 +141,7 @@ export const initializeSampleData = async (): Promise<void> => {
     
     if (existingContents === 0) {
       console.log('🚀 Database is empty, inserting sample data...');
-      
-      const now = new Date();
-      const sampleContentsWithDates = SAMPLE_CONTENTS.map(content => ({
-        ...content,
-        id: generateId(),
-        createdAt: new Date(now.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within last week
-        updatedAt: new Date(now.getTime() - Math.random() * 24 * 60 * 60 * 1000) // Random date within last day
-      }));
-      
-      await db.contents.bulkAdd(sampleContentsWithDates);
-      console.log(`✅ Successfully inserted ${sampleContentsWithDates.length} sample contents`);
+      await forceSampleDataLoad();
     } else {
       console.log('✅ Database already has content, skipping sample data initialization');
     }
@@ -134,11 +155,11 @@ export const contentService = {
   async getAll(): Promise<ContentItem[]> {
     console.log('🔍 contentService.getAll() called');
     
-    // Inicializar datos de prueba si es necesario
+    // Siempre verificar e inicializar datos de prueba si es necesario
     await initializeSampleData();
     
     const contents = await db.contents.orderBy('updatedAt').reverse().toArray();
-    console.log(`📊 contentService.getAll() returning ${contents.length} contents:`, contents);
+    console.log(`📊 contentService.getAll() returning ${contents.length} contents`);
     return contents;
   },
   
@@ -182,8 +203,8 @@ export const contentService = {
     }
     
     // Search filter - search in hook, script, and context
-    if (filter.search) {
-      const searchTerm = filter.search.toLowerCase();
+    if (filter.search && filter.search.trim() !== '') {
+      const searchTerm = filter.search.toLowerCase().trim();
       console.log(`🔍 Filtering by search term: "${searchTerm}"`);
       query = query.filter(item => 
         item.hook.toLowerCase().includes(searchTerm) ||

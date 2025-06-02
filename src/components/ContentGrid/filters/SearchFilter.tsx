@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Search } from "lucide-react";
 
 interface SearchFilterProps {
   value: string | undefined;
@@ -9,45 +10,36 @@ interface SearchFilterProps {
 }
 
 export function SearchFilter({ value, onChange }: SearchFilterProps) {
-  const [searchText, setSearchText] = useState(value || '');
+  const [searchTerm, setSearchTerm] = useState(value || '');
 
-  // Debounce para la búsqueda
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchText !== value) {
-        console.log(`🔍 Search debounce triggered with: "${searchText}"`);
-        onChange(searchText || undefined);
-      }
-    }, 500);
+    const timer = setTimeout(() => {
+      console.log('🔍 Search debounce triggered with:', searchTerm);
+      onChange(searchTerm || undefined);
+    }, 300);
 
-    return () => clearTimeout(timeoutId);
-  }, [searchText, value, onChange]);
+    return () => clearTimeout(timer);
+  }, [searchTerm, onChange]);
 
-  // Sincronizar search text con el filtro
-  useEffect(() => {
-    setSearchText(value || '');
-  }, [value]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    console.log('🔍 Search input changed to:', inputValue);
-    setSearchText(inputValue);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    console.log('🔍 Search input changed to:', newValue);
+    setSearchTerm(newValue);
   };
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search">Buscar</Label>
-      <Input
-        id="search"
-        placeholder="Buscar en hooks, scripts o contexto..."
-        value={searchText}
-        onChange={handleSearchChange}
-      />
-      {searchText && (
-        <p className="text-xs text-muted-foreground">
-          Buscando: "{searchText}"
-        </p>
-      )}
+      <Label>Buscar</Label>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          type="text"
+          placeholder="Buscar en hooks, scripts, contexto..."
+          value={searchTerm}
+          onChange={handleChange}
+          className="pl-10"
+        />
+      </div>
     </div>
   );
 }

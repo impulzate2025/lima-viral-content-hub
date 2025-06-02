@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "./StatCard";
 import { QuickActions } from "./QuickActions";
 import { PlatformChart } from "./PlatformChart";
-import { contentService } from "@/lib/database";
-import { FileText, TrendingUp, CheckCircle, Users } from "lucide-react";
+import { contentService, forceSampleDataLoad } from "@/lib/database";
+import { FileText, TrendingUp, CheckCircle, Users, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardProps {
   onNewContent: () => void;
@@ -31,17 +33,48 @@ export function Dashboard({ onNewContent, onImportExcel, onExportData, onGenerat
     platformDistribution: {}
   });
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadStats();
   }, []);
 
   const loadStats = async () => {
+    console.log('🔍 Dashboard: Loading stats...');
+    setIsLoading(true);
     try {
       const dashboardStats = await contentService.getStats();
+      console.log('📊 Dashboard: Stats loaded:', dashboardStats);
       setStats(dashboardStats);
     } catch (error) {
-      console.error('Error loading dashboard stats:', error);
+      console.error('❌ Dashboard: Error loading stats:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las estadísticas del dashboard.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForceLoadSampleData = async () => {
+    console.log('🔍 Dashboard: Force loading sample data...');
+    setIsLoading(true);
+    try {
+      await forceSampleDataLoad();
+      await loadStats(); // Recargar stats después de insertar datos
+      toast({
+        title: "Datos cargados",
+        description: "Los datos de prueba se han cargado exitosamente.",
+      });
+    } catch (error) {
+      console.error('❌ Dashboard: Error force loading sample data:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos de prueba.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +109,26 @@ export function Dashboard({ onNewContent, onImportExcel, onExportData, onGenerat
         </div>
       </div>
 
+      {/* No data state */}
+      {stats.totalContents === 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-800">No hay datos que mostrar</h3>
+              <p className="text-yellow-700">La base de datos está vacía. Carga algunos datos de prueba para empezar.</p>
+            </div>
+            <Button 
+              onClick={handleForceLoadSampleData}
+              disabled={isLoading}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              {isLoading && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
+              Cargar Datos de Prueba
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -83,15 +136,15 @@ export function Dashboard({ onNewContent, onImportExcel, onExportData, onGenerat
           value={stats.totalContents}
           description="Contenidos en la base de datos"
           icon={FileText}
-          trend={{ value: 12, isPositive: true }}
+          trend={stats.totalContents > 0 ? { value: 12, isPositive: true } : undefined}
         />
         
         <StatCard
           title="Viral Score Promedio"
-          value={`${stats.avgViralScore}/100`}
+          value={stats.totalContents > 0 ? `${stats.avgViralScore}/100` : "0/100"}
           description="Potencial viral promedio"
           icon={TrendingUp}
-          trend={{ value: 5, isPositive: true }}
+          trend={stats.avgViralScore > 0 ? { value: 5, isPositive: true } : undefined}
         />
         
         <StatCard
@@ -142,6 +195,37 @@ export function Dashboard({ onNewContent, onImportExcel, onExportData, onGenerat
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Debug refresh button - only in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <h4 className="font-medium text-blue-800">Debug Dashboard</h4>
+              <p className="text-sm text-blue-700">Herramientas de desarrollo</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={loadStats}
+                disabled={isLoading}
+              >
+                {isLoading && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
+                Actualizar Stats
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleForceLoadSampleData}
+                disabled={isLoading}
+              >
+                Recargar Datos
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
