@@ -1,11 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { X, Filter } from "lucide-react";
@@ -34,14 +33,73 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
     filter.minViralScore || 0,
     filter.maxViralScore || 100
   ]);
+  const [searchText, setSearchText] = useState(filter.search || '');
+
+  // Debounce para la búsqueda
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchText !== filter.search) {
+        console.log(`🔍 Search debounce triggered with: "${searchText}"`);
+        onFilterChange({ search: searchText || undefined });
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchText, filter.search, onFilterChange]);
+
+  // Sincronizar viral score range con el filtro
+  useEffect(() => {
+    setViralScoreRange([
+      filter.minViralScore || 0,
+      filter.maxViralScore || 100
+    ]);
+  }, [filter.minViralScore, filter.maxViralScore]);
+
+  // Sincronizar search text con el filtro
+  useEffect(() => {
+    setSearchText(filter.search || '');
+  }, [filter.search]);
 
   const handleViralScoreChange = (values: number[]) => {
+    console.log('🔍 Viral score range changed to:', values);
     setViralScoreRange([values[0], values[1]]);
     onFilterChange({
-      ...filter,
-      minViralScore: values[0],
-      maxViralScore: values[1]
+      minViralScore: values[0] === 0 ? undefined : values[0],
+      maxViralScore: values[1] === 100 ? undefined : values[1]
     });
+  };
+
+  const handlePlatformChange = (value: string) => {
+    console.log('🔍 Platform filter changed to:', value);
+    onFilterChange({ platform: value as Platform || undefined });
+  };
+
+  const handleTypeChange = (value: string) => {
+    console.log('🔍 Content type filter changed to:', value);
+    onFilterChange({ type: value as ContentType || undefined });
+  };
+
+  const handleDurationChange = (value: string) => {
+    console.log('🔍 Duration filter changed to:', value);
+    onFilterChange({ duration: value as Duration || undefined });
+  };
+
+  const handleStatusChange = (value: string) => {
+    console.log('🔍 Status filter changed to:', value);
+    onFilterChange({ status: value as ContentStatus || undefined });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    console.log('🔍 Search input changed to:', value);
+    setSearchText(value);
+  };
+
+  const handleClearFilters = () => {
+    console.log('🔍 Clearing all filters');
+    setSearchText('');
+    setViralScoreRange([0, 100]);
+    onClearFilters();
   };
 
   const hasActiveFilters = Object.keys(filter).some(key => {
@@ -56,7 +114,10 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
     if (filter.duration) count++;
     if (filter.status) count++;
     if (filter.search) count++;
-    if (filter.minViralScore !== undefined || filter.maxViralScore !== undefined) count++;
+    if (filter.minViralScore !== undefined || filter.maxViralScore !== undefined) {
+      // Solo contar si no son los valores por defecto
+      if (filter.minViralScore !== 0 || filter.maxViralScore !== 100) count++;
+    }
     return count;
   };
 
@@ -75,7 +136,7 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
           </CardTitle>
           {hasActiveFilters && (
             <Button
-              onClick={onClearFilters}
+              onClick={handleClearFilters}
               variant="outline"
               size="sm"
               className="h-8"
@@ -94,9 +155,14 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
           <Input
             id="search"
             placeholder="Buscar en hooks, scripts o contexto..."
-            value={filter.search || ''}
-            onChange={(e) => onFilterChange({ ...filter, search: e.target.value })}
+            value={searchText}
+            onChange={handleSearchChange}
           />
+          {searchText && (
+            <p className="text-xs text-muted-foreground">
+              Buscando: "{searchText}"
+            </p>
+          )}
         </div>
 
         {/* Plataforma */}
@@ -104,7 +170,7 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
           <Label>Plataforma</Label>
           <Select 
             value={filter.platform || undefined} 
-            onValueChange={(value) => onFilterChange({ ...filter, platform: value as Platform || undefined })}
+            onValueChange={handlePlatformChange}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todas las plataformas" />
@@ -124,7 +190,7 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
           <Label>Tipo de Contenido</Label>
           <Select 
             value={filter.type || undefined} 
-            onValueChange={(value) => onFilterChange({ ...filter, type: value as ContentType || undefined })}
+            onValueChange={handleTypeChange}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todos los tipos" />
@@ -144,7 +210,7 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
           <Label>Duración</Label>
           <Select 
             value={filter.duration || undefined} 
-            onValueChange={(value) => onFilterChange({ ...filter, duration: value as Duration || undefined })}
+            onValueChange={handleDurationChange}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todas las duraciones" />
@@ -164,7 +230,7 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
           <Label>Estado</Label>
           <Select 
             value={filter.status || undefined} 
-            onValueChange={(value) => onFilterChange({ ...filter, status: value as ContentStatus || undefined })}
+            onValueChange={handleStatusChange}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todos los estados" />
@@ -196,6 +262,14 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
             <span>100</span>
           </div>
         </div>
+
+        {/* Debug Info - Solo en desarrollo */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-muted-foreground p-2 bg-muted rounded">
+            <strong>Debug - Current Filter:</strong>
+            <pre>{JSON.stringify(filter, null, 2)}</pre>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -5,7 +5,8 @@ import { FilterPanel } from "./FilterPanel";
 import { ContentItem, ContentFilter } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Copy, FileDown } from "lucide-react";
+import { Trash2, FileDown, RefreshCw } from "lucide-react";
+import { useContentStore } from "@/stores/content-store";
 
 interface ContentGridProps {
   contents: ContentItem[];
@@ -31,13 +32,22 @@ export function ContentGrid({
   onExportSelected
 }: ContentGridProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const { clearFilters, loadContents, isLoading } = useContentStore();
 
   const handleClearFilters = () => {
-    onFilterChange({});
+    console.log('🔍 ContentGrid: Clearing filters');
+    clearFilters();
+  };
+
+  const handleRefreshData = async () => {
+    console.log('🔍 ContentGrid: Refreshing data');
+    await loadContents();
   };
 
   const handleBulkAction = (action: 'delete' | 'export') => {
     if (selectedIds.length === 0) return;
+    
+    console.log(`🔍 ContentGrid: Bulk ${action} for ${selectedIds.length} items`);
     
     if (action === 'delete') {
       onBulkDelete(selectedIds);
@@ -54,28 +64,45 @@ export function ContentGrid({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Gestión de Contenidos ({contents.length})</CardTitle>
-            {selectedIds.length > 0 && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBulkAction('export')}
-                >
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Exportar ({selectedIds.length})
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBulkAction('delete')}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar ({selectedIds.length})
-                </Button>
-              </div>
-            )}
+            <CardTitle className="flex items-center gap-2">
+              Gestión de Contenidos ({contents.length})
+              {isLoading && <RefreshCw className="h-4 w-4 animate-spin" />}
+            </CardTitle>
+            <div className="flex gap-2">
+              {/* Botón de actualizar datos */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshData}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
+              
+              {/* Acciones bulk */}
+              {selectedIds.length > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction('export')}
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Exportar ({selectedIds.length})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction('delete')}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar ({selectedIds.length})
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
       </Card>
