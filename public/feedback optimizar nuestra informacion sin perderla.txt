@@ -1,0 +1,271 @@
+Contexto Web de Desarrollador Full-Stack para la Solución Propuesta
+Como desarrollador experimentado, entenderás bien los conceptos detrás de esto:
+El Problema Base (IndexedDB):
+IndexedDB es una base de datos del navegador. Piensa en ella como una pequeña base de datos NoSQL que vive dentro de tu navegador web específico (Chrome, Firefox, Edge, etc.) y dentro de tu perfil de usuario de ese navegador.
+Persistencia: Es persistente, lo que significa que los datos no se pierden al cerrar el navegador o apagar la computadora.
+Aislamiento: Sin embargo, está aislada. Si abres la aplicación en otro navegador, en otra computadora, o incluso en otro perfil de usuario en la misma computadora, no verá los datos.
+Vulnerabilidad: Es vulnerable si el usuario realiza acciones como:
+"Limpiar historial de navegación" y selecciona "datos de sitios web" o "caché".
+Desinstalar el navegador.
+Borrar el perfil de usuario del navegador.
+La Solución: Backup y Restauración Local
+La idea es darle al usuario la capacidad de "exportar" una copia de seguridad de sus datos de IndexedDB a un archivo que pueda guardar en su disco duro (o en la nube, pero eso ya es responsabilidad del usuario). Luego, si los datos se pierden en el navegador, puede "importar" ese archivo de vuelta.
+Tecnologías Web Involucradas (Cliente-Side):
+JSON (JavaScript Object Notation): Es el formato estándar para intercambiar datos en la web. Es perfecto para guardar una "foto" de tus objetos ContentItem y Campaign de forma estructurada.
+JSON.stringify(tuObjeto): Convierte un objeto JavaScript (como un array de ContentItem) en una cadena de texto JSON.
+JSON.parse(tuCadenaJSON): Convierte una cadena de texto JSON de vuelta en un objeto JavaScript.
+Blob y URL.createObjectURL (Para Exportación/Descarga):
+Un Blob (Binary Large Object) es un objeto que representa datos de tipo archivo. Podemos crear un Blob a partir de nuestra cadena JSON.
+URL.createObjectURL(blob): Genera una URL temporal que apunta a ese Blob en la memoria del navegador. Esta URL puede usarse como href en una etiqueta <a>.
+<a> tag download attribute: Cuando un enlace <a> tiene el atributo download="nombre-archivo.json", al hacer clic, el navegador descarga el recurso (la URL del Blob) con el nombre especificado.
+FileReader (Para Importación/Carga):
+Cuando el usuario selecciona un archivo (ej. un .json de backup) a través de un input type="file", obtenemos un objeto File.
+FileReader: Es una API para leer el contenido de archivos locales seleccionados por el usuario. Puedes leerlo como texto (readAsText), array buffer, etc.
+Una vez leído como texto, usaremos JSON.parse para convertirlo de nuevo en objetos JavaScript.
+Dexie.js / IndexedDB (Para Persistencia Real):
+Después de leer el JSON y convertirlo en objetos ContentItem y Campaign, usaremos los métodos de Dexie.js (db.contents.bulkPut, db.campaigns.bulkPut) para insertar estos objetos masivamente de vuelta en tu base de datos IndexedDB.
+Estrategia de Importación: Es crucial decidir cómo manejas los IDs.
+Sobrescribir: Borrar toda la base de datos y luego añadir los datos importados. Esto es simple pero destructivo si el usuario tenía datos nuevos no guardados en el backup.
+Fusionar (bulkPut): bulkPut intentará actualizar registros si el id ya existe, y añadir nuevos si no. Esta es una estrategia de "fusión" más segura, aunque requiere que tus IDs sean estables (no generados automáticamente de forma incremental en Dexie si el ID primario es ++id). Si tu id es string y lo generas con generateId(), bulkPut funcionará perfectamente.
+Añadir como Nuevos: Siempre añadir los datos importados como nuevos registros, generando nuevos IDs si es necesario. Esto puede llevar a duplicados.
+Para tu caso, dado que los IDs son string generados, bulkPut es ideal para una estrategia de "fusionar" (actualizar si existe, añadir si no). Para un "restaurar completo", podemos hacer un db.clear() y luego bulkAdd(). Ofrecer ambas opciones al usuario es lo óptimo.
+Plan de Implementación Paso a Paso (Con Seguridad y Contexto Full-Stack)
+Vamos a implementar esta funcionalidad en varias fases, enfocándonos en la seguridad y en no afectar lo existente.
+Fase 1: Preparación y Utilidades Básicas
+Revisar src/types/index.ts: Asegurarnos de que tus interfaces ContentItem y Campaign son completas y representan el estado exacto de los datos en IndexedDB. Esto es vital para JSON.stringify/parse.
+Crear src/lib/data-backup.ts (Nueva Utilidad):
+Aquí residirán las funciones de exportación e importación JSON. Esto aísla la lógica de backup del resto de la aplicación.
+exportDataAsJson Función:
+// src/lib/data-backup.ts
+import { db } from './database'; // Tu instancia de Dexie
+import { ContentItem, Campaign } from '@/types'; // Asegúrate de la ruta
+
+interface AppDataBackup {
+  contents: ContentItem[];
+  campaigns: Campaign[];
+  // Cualquier otra tabla que quieras respaldar
+}
+
+export async function exportDataAsJson(filename: string = 'vcm_backup.json'): Promise<void> {
+  try {
+    const allContents = await db.contents.toArray();
+    const allCampaigns = await db.campaigns.toArray();
+
+    const dataToBackup: AppDataBackup = {
+      contents: allContents,
+      campaigns: allCampaigns,
+    };
+
+    const jsonString = JSON.stringify(dataToBackup, null, 2); // null, 2 para formato legible
+    const blob = new Blob([jsonString], { type: 'application/json' });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a); // Necesario para que Safari funcione
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url); // Liberar la URL del objeto
+
+    console.log("Backup JSON generado y descargado con éxito.");
+    // Aquí puedes añadir una notificación Toast al usuario
+  } catch (error) {
+    console.error("Error al exportar datos JSON:", error);
+    // Notificación de error al usuario
+    throw error; // Propagar el error para manejo en la UI
+  }
+}
+Use code with caution.
+TypeScript
+importDataFromJson Función (Estrategia de Sobrescritura Completa - Más Segura al inicio):
+// src/lib/data-backup.ts (continuación)
+export async function importDataFromJson(file: File): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!file || file.type !== 'application/json') {
+      reject(new Error("Por favor, selecciona un archivo JSON válido."));
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      try {
+        const jsonString = event.target?.result as string;
+        const backupData: AppDataBackup = JSON.parse(jsonString);
+
+        // Empezar una transacción para asegurar la atomicidad
+        await db.transaction('rw', db.contents, db.campaigns, async () => {
+          // Borrar tablas existentes antes de importar
+          await db.contents.clear();
+          await db.campaigns.clear();
+
+          // Añadir los datos importados
+          if (backupData.contents && backupData.contents.length > 0) {
+            // Es importante asegurarse de que las fechas se rehidraten como objetos Date
+            const contentsToAdd = backupData.contents.map(item => ({
+              ...item,
+              createdAt: new Date(item.createdAt),
+              updatedAt: new Date(item.updatedAt)
+            }));
+            await db.contents.bulkAdd(contentsToAdd);
+          }
+          if (backupData.campaigns && backupData.campaigns.length > 0) {
+            const campaignsToAdd = backupData.campaigns.map(item => ({
+              ...item,
+              startDate: new Date(item.startDate),
+              endDate: item.endDate ? new Date(item.endDate) : undefined
+            }));
+            await db.campaigns.bulkAdd(campaignsToAdd);
+          }
+        });
+
+        console.log("Datos JSON importados y restaurados con éxito.");
+        resolve();
+        // Aquí puedes añadir una notificación Toast de éxito
+        // Y quizás recargar los datos en el store de Zustand si es necesario
+      } catch (error) {
+        console.error("Error al importar datos JSON:", error);
+        reject(new Error("Error al procesar el archivo JSON: " + (error as Error).message));
+      }
+    };
+
+    reader.onerror = () => {
+      console.error("Error al leer el archivo.");
+      reject(new Error("Error al leer el archivo."));
+    };
+
+    reader.readAsText(file);
+  });
+}
+Use code with caution.
+TypeScript
+Fase 2: Interfaz de Usuario (UI)
+Crear src/components/BackupRestoreManager/index.tsx:
+Será un modal o una sección en el Dashboard/Configuración.
+Botón "Exportar Datos (JSON)": Al hacer clic, llamará a exportDataAsJson().
+Input de Tipo Archivo (<input type="file" />): Con un botón asociado "Importar Datos (JSON)". Al seleccionar un archivo y hacer clic en el botón, se obtendrá el File object y se pasará a importDataFromJson().
+Manejo de Estados: Mostrar mensajes de "Cargando...", "Éxito", "Error".
+Advertencia de Seguridad: Mostrar una advertencia clara al usuario sobre la responsabilidad de guardar el archivo de backup en un lugar seguro y el efecto de sobrescribir datos al importar.
+// src/components/BackupRestoreManager/index.tsx
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button'; // shadcn/ui button
+import { Input } from '@/components/ui/input'; // shadcn/ui input
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+import { exportDataAsJson, importDataFromJson } from '@/lib/data-backup';
+import { toast } from 'sonner'; // Si estás usando sonner para notificaciones
+
+export const BackupRestoreManager: React.FC = () => {
+  const [isLoadingExport, setIsLoadingExport] = useState(false);
+  const [isLoadingImport, setIsLoadingImport] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleExport = async () => {
+    setIsLoadingExport(true);
+    try {
+      await exportDataAsJson();
+      toast.success("Backup de datos exportado con éxito.");
+    } catch (error) {
+      toast.error("Error al exportar datos. " + (error as Error).message);
+    } finally {
+      setIsLoadingExport(false);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setSelectedFile(event.target.files[0]);
+    } else {
+      setSelectedFile(null);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!selectedFile) {
+      toast.error("Por favor, selecciona un archivo para importar.");
+      return;
+    }
+
+    setIsLoadingImport(true);
+    try {
+      // Confirmación adicional antes de sobrescribir
+      const confirmImport = window.confirm(
+        "¡ADVERTENCIA! Al importar, todos los datos existentes en la aplicación serán ELIMINADOS y reemplazados por los datos del archivo. ¿Estás seguro de que quieres continuar?"
+      );
+      if (!confirmImport) {
+        setIsLoadingImport(false);
+        return;
+      }
+
+      await importDataFromJson(selectedFile);
+      toast.success("Datos importados y restaurados con éxito. Puede que necesites recargar la página.");
+      // Aquí podrías disparar una recarga de datos en tu store de Zustand
+      // O incluso window.location.reload() para un reinicio completo (menos elegante)
+    } catch (error) {
+      toast.error("Error al importar datos. " + (error as Error).message);
+    } finally {
+      setIsLoadingImport(false);
+      setSelectedFile(null); // Limpiar el input file
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Gestionar Backups de Datos</CardTitle>
+        <CardDescription>
+          Exporta tus datos a un archivo JSON o impórtalos para restaurar tu información.
+          Tus datos se guardan solo en tu navegador.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Sección de Exportación */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Exportar Datos</h3>
+          <p className="text-sm text-gray-500">
+            Descarga una copia de seguridad de todos tus contenidos y campañas como un archivo JSON.
+          </p>
+          <Button onClick={handleExport} disabled={isLoadingExport}>
+            {isLoadingExport ? 'Exportando...' : 'Exportar Datos (JSON)'}
+          </Button>
+        </div>
+
+        {/* Sección de Importación */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Importar Datos</h3>
+          <p className="text-sm text-gray-500">
+            Carga un archivo JSON de backup para restaurar tus datos. Esto SOBREESCRIBIRÁ todos los datos actuales.
+          </p>
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="backup-file" className="sr-only">Archivo JSON</Label>
+            <Input id="backup-file" type="file" accept=".json" onChange={handleFileChange} />
+            <Button onClick={handleImport} disabled={isLoadingImport || !selectedFile}>
+              {isLoadingImport ? 'Importando...' : 'Importar Datos (JSON)'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md">
+          <p className="font-semibold">?? Advertencia Importante:</p>
+          <ul className="list-disc list-inside text-sm mt-1">
+            <li>Los backups se guardan en tu equipo. Eres responsable de proteger ese archivo.</li>
+            <li>Si limpias la caché del navegador, cambias de navegador o de equipo, los datos locales se perderán a menos que tengas un backup.</li>
+            <li>La importación de un backup SOBREESCRIBE los datos actuales.</li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+Use code with caution.
+Jsx
+Fase 3: Integración en la Aplicación
+Añadir al Dashboard o a una Página de Configuración: Puedes colocar el componente <BackupRestoreManager /> en una nueva ruta /settings o como un modal accesible desde el Dashboard. Para empezar, podemos añadirlo temporalmente en el Dashboard para que sea fácil de probar.
+Actualizar useContentStore (o similar): Después de una importación exitosa, el estado global de tu aplicación (ej. el array contents en Zustand) no se actualizará automáticamente. Necesitarás disparar una recarga de los datos desde la base de datos de Dexie para que la UI refleje los cambios. Por ejemplo, llamar a useContentStore.getState().loadContentsFromDb() si tienes una función así, o simplemente window.location.reload().
+Seguridad y Advertencias (Importante para un Desarrollador Full-Stack):
+Variables de Entorno y API Keys: Las API keys (como la de Gemini) nunca deben guardarse en un backup JSON. Ya las manejamos con .env.local y Vite, que es la forma correcta para una app local.
+Archivos de Backup: El usuario es responsable de la seguridad y el almacenamiento de los archivos .json que descarga. La aplicación no tiene control sobre ellos una vez descargados.
+Estrategia de bulkPut vs bulkAdd: En importDataFromJson, elegí clear() y bulkAdd() para una sobrescritura completa, que es la más sencilla de implementar y entender para el usuario ("tus datos se reemplazan por el backup"). Si en el futuro quieres una "fusión" más compleja (mantener datos nuevos y actualizar viejos), la lógica de bulkPut sería más compleja (por ejemplo, iterar sobre los elementos del backup y usar db.contents.put(item) individualmente, o un bulkPut directamente si tus IDs son tus claves primarias).
+Manejo de Fechas: Cuando JSON.stringify serializa objetos Date, los convierte en cadenas de texto. Cuando JSON.parse los deserializa, siguen siendo cadenas. Es crucial en la función importDataFromJson convertirlos de nuevo a objetos new Date() para que Dexie y tu aplicación los traten correctamente. (Lo he incluido en el ejemplo).
+Notificaciones: Usa sonner o tu librería de notificaciones preferida para dar feedback claro al usuario sobre el éxito o el fracaso de las operaciones.

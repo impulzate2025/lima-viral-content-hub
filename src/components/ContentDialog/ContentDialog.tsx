@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { ContentEditor } from "@/components/ContentEditor/ContentEditor";
 import { FileUploader } from "@/components/FileUploader/FileUploader";
-import { ContentItem } from "@/types";
+import { ContentItem, DialogType } from "@/types"; // Importar DialogType
 
-type DialogType = 'none' | 'editor' | 'uploader' | 'viewer';
+// type DialogType = 'none' | 'editor' | 'uploader' | 'viewer'; // Eliminar definición local
 
 interface ContentDialogProps {
   dialogType: DialogType;

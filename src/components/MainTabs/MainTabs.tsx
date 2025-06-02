@@ -1,6 +1,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dashboard } from "@/components/Dashboard/Dashboard";
+import { BackupRestoreManager } from "@/components/BackupRestoreManager"; // Importar BackupRestoreManager
 import { ContentGrid } from "@/components/ContentGrid/ContentGrid";
 import { Home, Grid3X3 } from "lucide-react";
 import { ContentItem, ContentFilter } from "@/types";
@@ -62,6 +63,9 @@ export function MainTabs({
           onExportData={onExportData}
           onGenerateAI={onGenerateAI}
         />
+        <div className="mt-8">
+          <BackupRestoreManager />
+        </div>
       </TabsContent>
 
       <TabsContent value="content" className="space-y-6">

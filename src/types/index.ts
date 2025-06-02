@@ -66,6 +66,8 @@ export interface AppSettings {
   value: any;
 }
 
+export type DialogType = 'none' | 'editor' | 'uploader' | 'viewer' | 'aiGenerator';
+
 export interface ExportRecord {
   id: string;
   type: 'excel' | 'pdf' | 'campaign';
