@@ -103,14 +103,13 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
         <div className="space-y-2">
           <Label>Plataforma</Label>
           <Select 
-            value={filter.platform || ''} 
+            value={filter.platform || undefined} 
             onValueChange={(value) => onFilterChange({ ...filter, platform: value as Platform || undefined })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todas las plataformas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las plataformas</SelectItem>
               {PLATFORMS.map(platform => (
                 <SelectItem key={platform} value={platform}>
                   {platform}
@@ -124,14 +123,13 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
         <div className="space-y-2">
           <Label>Tipo de Contenido</Label>
           <Select 
-            value={filter.type || ''} 
+            value={filter.type || undefined} 
             onValueChange={(value) => onFilterChange({ ...filter, type: value as ContentType || undefined })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todos los tipos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los tipos</SelectItem>
               {CONTENT_TYPES.map(type => (
                 <SelectItem key={type} value={type}>
                   {type}
@@ -145,14 +143,13 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
         <div className="space-y-2">
           <Label>Duración</Label>
           <Select 
-            value={filter.duration || ''} 
+            value={filter.duration || undefined} 
             onValueChange={(value) => onFilterChange({ ...filter, duration: value as Duration || undefined })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todas las duraciones" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las duraciones</SelectItem>
               {DURATIONS.map(duration => (
                 <SelectItem key={duration} value={duration}>
                   {duration}
@@ -166,14 +163,13 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
         <div className="space-y-2">
           <Label>Estado</Label>
           <Select 
-            value={filter.status || ''} 
+            value={filter.status || undefined} 
             onValueChange={(value) => onFilterChange({ ...filter, status: value as ContentStatus || undefined })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Todos los estados" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los estados</SelectItem>
               {STATUSES.map(status => (
                 <SelectItem key={status} value={status}>
                   {STATUS_LABELS[status]}
