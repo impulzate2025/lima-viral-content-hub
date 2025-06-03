@@ -1,3 +1,4 @@
+
 // src/lib/ai-generator.ts
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { ContentType, Platform } from '@/types';
@@ -13,43 +14,41 @@ export interface HookGenerationParams {
 
 export class AIContentGenerator {
   private genAI: GoogleGenerativeAI;
-  private model: any;
-  // private modelName: string = 'gemini-pro'; // Comentamos o quitamos esta línea, la determinaremos dinámicamente
 
   constructor(apiKey: string) {
     if (!apiKey) {
       throw new Error("API Key for Google Gemini is missing. Please set VITE_GOOGLE_GEMINI_API_KEY in your .env.local file.");
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
-    // Ya no inicializamos el modelo aquí en el constructor
   }
 
-  // --- COMIENZO DE LA FUNCIÓN A RE-AÑADIR/VERIFICAR ---
-  // Este método lista los modelos DISPONIBLES para tu cuenta
+  // Método para listar modelos disponibles (funciona con versiones más recientes)
   async listAvailableModels(): Promise<any[]> {
     try {
       console.log("🔍 Fetching available AI models...");
-      const { models } = await this.genAI.listModels();
-      console.log("✅ RAW Available AI models array (for debugging):", models); // <-- MUESTRA EL ARRAY COMPLETO
-      console.log("✅ Detailed list of available AI models:");
-      models.forEach(model => {
-        console.log(`- Model Name: ${model.name}`);
-        console.log(`  Description: ${model.description}`);
-        console.log(`  Supported Generation Methods: ${model.supportedGenerationMethods?.join(', ')}`);
-        console.log(`  Input Token Limit: ${model.inputTokenLimit}`);
-        console.log(`  Output Token Limit: ${model.outputTokenLimit}`);
-        console.log('---');
-      });
-      return models;
+      
+      // Verificar si el método existe antes de usarlo
+      if (typeof this.genAI.listModels === 'function') {
+        const { models } = await this.genAI.listModels();
+        console.log("✅ Available AI models:", models.length);
+        models.forEach(model => {
+          console.log(`- Model: ${model.name}`);
+          console.log(`  Description: ${model.description || 'No description'}`);
+          console.log(`  Supported Methods: ${model.supportedGenerationMethods?.join(', ') || 'Unknown'}`);
+          console.log('---');
+        });
+        return models;
+      } else {
+        console.log("ℹ️ listModels method not available in current API version");
+        return [];
+      }
     } catch (error) {
       console.error("❌ Error listing available AI models:", error);
-      throw error;
+      return [];
     }
   }
-  // --- FIN DE LA FUNCIÓN A RE-AÑADIR/VERIFICAR ---
 
   private buildHookPrompt(params: HookGenerationParams): string {
-    // ... tu código de prompt (que ya está bien) ...
     return `
     Eres un experto en marketing viral y creación de contenido para redes sociales en Lima, Perú.
     Tu tarea es generar un gancho (hook) extremadamente viral y atractivo para un contenido específico.
@@ -100,73 +99,67 @@ export class AIContentGenerator {
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
       ];
 
-      // --- CAMBIOS EN LA SELECCIÓN DEL MODELO ---
-      let modelToUse = 'gemini-1.5-pro'; // ¡Intentemos con gemini-1.5-pro como primer intento!
+      // Lista de modelos a intentar (orden de preferencia)
+      const modelsToTry = [
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-pro',
+        'gemini-1.0-pro'
+      ];
+
       let modelInstance: any;
+      let modelUsed = '';
 
-      try {
-        modelInstance = this.genAI.getGenerativeModel({ model: modelToUse });
-        console.log(`✅ Intentando con modelo: ${modelToUse}`);
-      } catch (initialModelError) {
-        console.warn(`⚠️ Modelo '${modelToUse}' no disponible directamente o no soportado para generateContent. Buscando alternativas...`, initialModelError);
-
-        // Si el modelo principal falla, listamos y buscamos uno compatible
-        const availableModels = await this.listAvailableModels(); // Esto ahora debería loguear la lista completa
-
-        // Buscar un modelo Gemini que soporte 'generateContent'
-        const suitableModel = availableModels.find(m =>
-          m.supportedGenerationMethods?.includes('generateContent') &&
-          m.name.includes('gemini') // Preferimos cualquier modelo Gemini compatible
-        );
-
-        if (suitableModel) {
-          modelToUse = suitableModel.name;
-          modelInstance = this.genAI.getGenerativeModel({ model: modelToUse });
-          console.log(`✅ Usando modelo compatible encontrado: ${modelToUse}`);
-        } else {
-          throw new Error("No se encontró un modelo Gemini compatible para 'generateContent' en tu proyecto. Por favor, revisa la consola de Google Cloud para la disponibilidad de modelos.");
+      // Intentar con cada modelo hasta encontrar uno que funcione
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`🔍 Intentando con modelo: ${modelName}`);
+          modelInstance = this.genAI.getGenerativeModel({ model: modelName });
+          modelUsed = modelName;
+          break;
+        } catch (modelError) {
+          console.warn(`⚠️ Modelo '${modelName}' no disponible:`, modelError);
+          continue;
         }
       }
 
       if (!modelInstance) {
-        throw new Error("Fallo al inicializar el modelo de IA. La instancia del modelo es nula.");
+        throw new Error("No se pudo inicializar ningún modelo Gemini disponible. Verifica tu API key y conectividad.");
       }
-      // --- FIN CAMBIOS SELECCIÓN MODELO ---
-      
-      const result = await modelInstance.generateContent({ // Usamos modelInstance aquí
-        contents: [{ role: "user", parts: [{text: prompt}]}],
+
+      console.log(`✅ Usando modelo: ${modelUsed}`);
+
+      const result = await modelInstance.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig,
         safetySettings,
       });
-      
+
       const response = result.response;
       const generatedText = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-      
+
       if (!generatedText) {
         console.error("La IA no devolvió ningún texto.", response);
         throw new Error("La IA no generó ningún texto. Intenta de nuevo.");
       }
-      
+
       console.log("✅ Texto generado con éxito");
       return generatedText;
     } catch (error) {
       console.error('❌ Error al generar el gancho con IA:', error);
-      
-      // Manejo de errores más genérico para capturar cualquier fallo de la API
+
       if (error instanceof Error) {
-        if (error.message.includes('API key not valid')) {
+        if (error.message.includes('API key not valid') || error.message.includes('invalid')) {
           throw new Error("API Key de Google Gemini no válida. Verifica tu archivo .env.local.");
         }
-        if (error.message.includes('No se encontró un modelo Gemini compatible')) {
-           // Este error ya lo manejamos arriba, lo propagamos
-           throw error;
+        if (error.message.includes('quota') || error.message.includes('limit')) {
+          throw new Error("Has alcanzado el límite de uso de la API de Gemini. Intenta más tarde.");
         }
-        // Capturar cualquier otro error de la API de Google
-        if (error.message.includes('GoogleGenerativeAIFetchError')) {
-           throw new Error("Error de conexión con la API de Google Gemini. Revisa tu conexión a internet o la consola para detalles: " + (error as Error).message);
+        if (error.message.includes('PERMISSION_DENIED')) {
+          throw new Error("Permisos denegados. Verifica que tu API key tenga acceso a Gemini API.");
         }
       }
-      
+
       throw new Error("Error al generar el gancho con IA. Por favor, inténtalo de nuevo más tarde.");
     }
   }
