@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainHeader } from "@/components/MainHeader/MainHeader";
 import { MainTabs } from "@/components/MainTabs/MainTabs";
@@ -7,6 +6,7 @@ import { AIGeneratorDialog } from "@/components/ContentDialog/AIGeneratorDialog"
 import { useContentStore } from "@/stores/content-store";
 import { useContentActions } from "@/hooks/useContentActions";
 import { ContentItem } from "@/types"; // Importar ContentItem
+import { aiGenerator } from '@/lib/ai-generator'; // <<-- ¡AÑADIDA ESTA LÍNEA! IMPORTA LA INSTANCIA DE aiGenerator
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -43,16 +43,23 @@ const Index = () => {
     setSelectedContent    // Añadir setSelectedContent
   } = useContentActions();
 
+  // --- ESTE ES TU useEffect ORIGINAL para cargar contenidos. ¡Aquí agregamos la llamada a listAvailableModels()! ---
   useEffect(() => {
     console.log('🚀 Index component mounted, loading contents...');
     loadContents();
-  }, [loadContents]);
+    
+    // Aquí llamamos al método para listar los modelos de IA disponibles.
+    // Esto se ejecutará una vez cuando el componente Index se monte.
+    // La salida aparecerá en la consola del navegador.
+    aiGenerator.listAvailableModels(); 
+  }, [loadContents]); // `loadContents` es una dependencia para React, la mantenemos.
 
-  // Debug: Log state changes
+  // --- TU useEffect ORIGINAL para debug de cambios en el estado de contenidos ---
   useEffect(() => {
     console.log(`📊 Contents state updated: ${contents.length} total, ${filteredContents.length} filtered`);
   }, [contents, filteredContents]);
 
+  // --- TU useEffect ORIGINAL para debug del estado del filtro actual ---
   useEffect(() => {
     console.log('📊 Current filter state:', currentFilter);
   }, [currentFilter]);

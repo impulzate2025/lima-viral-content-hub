@@ -1,10 +1,11 @@
 {
+  "extends": "./tsconfig.json", // <-- ¡Esto es lo que hace que herede!
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
+    "skipLibCheck": true, // <--- ¡Esto es lo que importa para tu código src!
 
     /* Bundler mode */
     "moduleResolution": "bundler",
