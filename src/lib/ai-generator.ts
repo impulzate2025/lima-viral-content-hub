@@ -22,32 +22,6 @@ export class AIContentGenerator {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
-  // Método para listar modelos disponibles (funciona con versiones más recientes)
-  async listAvailableModels(): Promise<any[]> {
-    try {
-      console.log("🔍 Fetching available AI models...");
-      
-      // Verificar si el método existe antes de usarlo
-      if (typeof this.genAI.listModels === 'function') {
-        const { models } = await this.genAI.listModels();
-        console.log("✅ Available AI models:", models.length);
-        models.forEach(model => {
-          console.log(`- Model: ${model.name}`);
-          console.log(`  Description: ${model.description || 'No description'}`);
-          console.log(`  Supported Methods: ${model.supportedGenerationMethods?.join(', ') || 'Unknown'}`);
-          console.log('---');
-        });
-        return models;
-      } else {
-        console.log("ℹ️ listModels method not available in current API version");
-        return [];
-      }
-    } catch (error) {
-      console.error("❌ Error listing available AI models:", error);
-      return [];
-    }
-  }
-
   private buildHookPrompt(params: HookGenerationParams): string {
     return `
     Eres un experto en marketing viral y creación de contenido para redes sociales en Lima, Perú.
@@ -165,4 +139,4 @@ export class AIContentGenerator {
   }
 }
 
-export const aiGenerator = new AIContentGenerator(import.meta.env.VITE_GOOGLE_GEMINI_API_KEY as string);
+export const aiGenerator = new AIContentGenerator("AIzaSyAXtkhhdIY4nvGAeeXPf_ohqZZYe0HvSiw");
