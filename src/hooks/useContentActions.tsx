@@ -1,19 +1,16 @@
-
 import { useState } from "react";
 import { useContentStore } from "@/stores/content-store";
 import { useToast } from "@/hooks/use-toast";
-import { ContentItem, ContentType, Platform, DialogType } from "@/types"; // Importar DialogType
+import { ContentItem, ContentType, Platform, DialogType } from "@/types";
 import { excelProcessor } from "@/lib/excel-processor";
 import { initializeSampleData } from "@/lib/database";
-import { AIContentGenerator, HookGenerationParams } from "@/lib/ai-generator"; // Importar AIContentGenerator
-
-// type DialogType = 'none' | 'editor' | 'uploader' | 'viewer' | 'aiGenerator'; // Eliminar definición local
+import { aiGenerator, HookGenerationParams } from "@/lib/ai-generator";
 
 export function useContentActions() {
   const [dialogType, setDialogType] = useState<DialogType>('none');
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
-  const [isAILoading, setIsAILoading] = useState(false); // Estado para carga de IA
-  const [generatedHook, setGeneratedHook] = useState<string | null>(null); // Estado para el hook generado
+  const [isAILoading, setIsAILoading] = useState(false);
+  const [generatedHook, setGeneratedHook] = useState<string | null>(null);
 
   const {
     contents,
@@ -199,7 +196,7 @@ export function useContentActions() {
 
   const handleOpenAIGenerator = () => {
     console.log('🔍 Opening AI Generator');
-    setGeneratedHook(null); // Limpiar hook previo
+    setGeneratedHook(null);
     setDialogType('aiGenerator');
   };
 
@@ -208,18 +205,7 @@ export function useContentActions() {
     setIsAILoading(true);
     setGeneratedHook(null);
     try {
-      const apiKey = import.meta.env.VITE_GOOGLE_GEMINI_API_KEY;
-      if (!apiKey) {
-        toast({
-          title: "Error de Configuración",
-          description: "La API Key de Google Gemini no está configurada. Revisa tu archivo .env.local.",
-          variant: "destructive"
-        });
-        setIsAILoading(false);
-        return;
-      }
-      const generator = new AIContentGenerator(apiKey);
-      const hook = await generator.generateHook(params);
+      const hook = await aiGenerator.generateHook(params);
       setGeneratedHook(hook);
       toast({
         title: "¡Hook Generado!",
@@ -281,9 +267,9 @@ export function useContentActions() {
     handleLoadSampleData,
     closeDialog,
     loadContents,
-    generatedHook, // Añadido para el generador de IA
-    isAILoading,   // Añadido para el generador de IA
-    setGeneratedHook, // Añadido para el generador de IA
-    setSelectedContent // Añadir setSelectedContent para que esté disponible externamente
+    generatedHook,
+    isAILoading,
+    setGeneratedHook,
+    setSelectedContent
   };
 }
