@@ -1,6 +1,6 @@
 
 export type Platform = 'TikTok' | 'Instagram' | 'YouTube' | 'LinkedIn';
-export type ContentType = 'Educativo' | 'Testimonial' | 'Controversial' | 'Predictivo' | 'Behind-Scenes';
+export type ContentType = 'Educativo' | 'Testimonial' | 'Controversial' | 'Predictivo' | 'Behind-Scenes' | 'Shock' | 'Storytelling' | 'Polemico' | 'Reto' | 'Autoridad';
 export type Duration = '15s' | '30s' | '60s' | '3-5min';
 export type ContentStatus = 'draft' | 'ready' | 'published' | 'archived';
 

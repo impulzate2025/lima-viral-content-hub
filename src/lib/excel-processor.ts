@@ -78,6 +78,11 @@ export class ExcelProcessor {
     if (type.includes('controversial')) return 'Controversial';
     if (type.includes('predictivo') || type.includes('prediction')) return 'Predictivo';
     if (type.includes('behind') || type.includes('detras')) return 'Behind-Scenes';
+    if (type.includes('shock') || type.includes('impacto')) return 'Shock';
+    if (type.includes('storytelling') || type.includes('historia')) return 'Storytelling';
+    if (type.includes('polemico') || type.includes('debate')) return 'Polemico';
+    if (type.includes('reto') || type.includes('challenge')) return 'Reto';
+    if (type.includes('autoridad') || type.includes('authority')) return 'Autoridad';
     return 'Educativo';
   }
   

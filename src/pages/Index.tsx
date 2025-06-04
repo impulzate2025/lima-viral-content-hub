@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { MainHeader } from "@/components/MainHeader/MainHeader";
 import { MainTabs } from "@/components/MainTabs/MainTabs";
 import { ContentDialog } from "@/components/ContentDialog/ContentDialog";
 import { AIGeneratorDialog } from "@/components/ContentDialog/AIGeneratorDialog";
+import { ExcelHelpButton } from "@/components/ExcelGuide/ExcelHelpButton";
 import { useContentStore } from "@/stores/content-store";
 import { useContentActions } from "@/hooks/useContentActions";
 import { ContentItem } from "@/types";
@@ -122,6 +124,9 @@ const Index = () => {
           generatedHook={generatedHook}
         />
       )}
+
+      {/* Botón flotante de ayuda para Excel */}
+      <ExcelHelpButton />
     </div>
   );
 };
