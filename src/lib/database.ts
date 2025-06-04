@@ -151,19 +151,13 @@ export const initializeSampleData = async (): Promise<void> => {
 
 // Servicios de base de datos
 export class ContentService {
-  db: Dexie;
-
-  constructor() {
-    this.db = db;
-  }
-
   async getAll(): Promise<ContentItem[]> {
     console.log('🔍 contentService.getAll() called');
     
     // Siempre verificar e inicializar datos de prueba si es necesario
     await initializeSampleData();
     
-    const contents = await this.db.contents.orderBy('updatedAt').reverse().toArray();
+    const contents = await db.contents.orderBy('updatedAt').reverse().toArray();
     console.log(`📊 contentService.getAll() returning ${contents.length} contents`);
     return contents;
   }
@@ -172,7 +166,7 @@ export class ContentService {
     console.log('🔍 contentService.getByFilter() called with filter:', filter);
     
     try {
-      let collection = this.db.contents.orderBy('updatedAt');
+      let collection = db.contents.orderBy('updatedAt');
       
       // Aplicar filtros según los criterios
       if (filter.platform) {
@@ -277,7 +271,7 @@ export class ContentService {
     console.log('🔍 contentService.create() called with:', content);
     const now = new Date();
     const id = generateId();
-    await this.db.contents.add({
+    await db.contents.add({
       ...content,
       id,
       createdAt: now,
@@ -289,7 +283,7 @@ export class ContentService {
   
   async update(id: string, updates: Partial<ContentItem>): Promise<void> {
     console.log(`🔍 contentService.update() called for id: ${id}`, updates);
-    await this.db.contents.update(id, {
+    await db.contents.update(id, {
       ...updates,
       updatedAt: new Date()
     });
@@ -298,7 +292,7 @@ export class ContentService {
   
   async delete(id: string): Promise<void> {
     console.log(`🔍 contentService.delete() called for id: ${id}`);
-    await this.db.contents.delete(id);
+    await db.contents.delete(id);
     console.log(`✅ Deleted content with id: ${id}`);
   }
   

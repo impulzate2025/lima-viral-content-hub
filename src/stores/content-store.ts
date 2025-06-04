@@ -103,23 +103,23 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     // Limpiar filtros con valores indefinidos o inválidos
     const cleanFilter: ContentFilter = {};
     
-    if (currentFilter.platform && currentFilter.platform !== '') {
+    if (currentFilter.platform && currentFilter.platform.trim() !== '') {
       cleanFilter.platform = currentFilter.platform;
     }
     
-    if (currentFilter.type && currentFilter.type !== '') {
+    if (currentFilter.type && currentFilter.type.trim() !== '') {
       cleanFilter.type = currentFilter.type;
     }
     
-    if (currentFilter.duration && currentFilter.duration !== '') {
+    if (currentFilter.duration && currentFilter.duration.trim() !== '') {
       cleanFilter.duration = currentFilter.duration;
     }
     
-    if (currentFilter.status && currentFilter.status !== '') {
+    if (currentFilter.status && currentFilter.status.trim() !== '') {
       cleanFilter.status = currentFilter.status;
     }
     
-    if (currentFilter.hookType && currentFilter.hookType !== '') {
+    if (currentFilter.hookType && currentFilter.hookType.trim() !== '') {
       cleanFilter.hookType = currentFilter.hookType;
     }
     
@@ -155,4 +155,3 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     }
   }
 }));
-

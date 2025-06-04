@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import { ContentItem, Platform, ContentType, Duration, ContentStatus } from '@/types';
 import { generateId } from './database';
@@ -133,6 +134,29 @@ export class ExcelProcessor {
   private parseTags(tagsString: string): string[] {
     if (!tagsString) return [];
     return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+  }
+
+  private parseStatus(statusString: string): ContentStatus {
+    const status = statusString.toLowerCase();
+    if (status.includes('draft') || status.includes('borrador')) return 'draft';
+    if (status.includes('ready') || status.includes('listo')) return 'ready';
+    if (status.includes('published') || status.includes('publicado')) return 'published';
+    if (status.includes('archived') || status.includes('archivado')) return 'archived';
+    return 'draft';
+  }
+
+  private parseMetrics(metricRow: any[]): { views?: number; engagement?: number; shares?: number; leads?: number } {
+    return {
+      views: this.parseNumber(metricRow[0]),
+      engagement: this.parseNumber(metricRow[1]),
+      shares: this.parseNumber(metricRow[2]),
+      leads: this.parseNumber(metricRow[3])
+    };
+  }
+
+  private parseNumber(value: any): number {
+    const num = typeof value === 'number' ? value : parseInt(value) || 0;
+    return Math.max(0, num);
   }
   
   async exportToExcel(contents: ContentItem[]): Promise<Blob> {
