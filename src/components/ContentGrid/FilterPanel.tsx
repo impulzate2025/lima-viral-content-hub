@@ -7,6 +7,7 @@ import { ContentTypeFilter } from "./filters/ContentTypeFilter";
 import { DurationFilter } from "./filters/DurationFilter";
 import { StatusFilter } from "./filters/StatusFilter";
 import { ViralScoreFilter } from "./filters/ViralScoreFilter";
+import { HookTypeFilter } from "./filters/HookTypeFilter";
 import { FilterHeader } from "./filters/FilterHeader";
 
 interface FilterPanelProps {
@@ -38,6 +39,11 @@ export function FilterPanel({ filter, onFilterChange, onClearFilters }: FilterPa
         <ContentTypeFilter
           value={filter.type}
           onChange={(type) => handleFilterChange({ type })}
+        />
+
+        <HookTypeFilter
+          value={filter.hookType}
+          onChange={(hookType) => handleFilterChange({ hookType })}
         />
 
         <DurationFilter

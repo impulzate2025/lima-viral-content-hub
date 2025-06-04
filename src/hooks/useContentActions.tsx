@@ -15,14 +15,14 @@ export function useContentActions() {
 
   const handleOpenAIGenerator = () => {
     console.log('🔍 Opening AI Generator');
-    aiGeneration.setGeneratedHook(null);
-    aiGeneration.setGeneratedContent(null);
+    aiGeneration.clearGeneratedData();
     contentCrud.setDialogType('aiGenerator');
   };
 
   const closeDialog = () => {
     contentCrud.closeDialog();
     importExport.setDialogType('none');
+    // NO limpiar los datos generados aquí - mantener para que el usuario pueda volver a usarlos
   };
 
   // Determine the current dialog type from both hooks
@@ -33,6 +33,8 @@ export function useContentActions() {
   };
 
   const handleUseCompleteContent = (hook: string, content: GeneratedContent) => {
+    console.log('💾 Using complete content:', { hook, content });
+    
     const newContentWithCompleteData: Partial<ContentItem> = {
       hook: hook,
       script: content.script,
@@ -47,9 +49,34 @@ export function useContentActions() {
       context: `Estrategia: ${content.distributionStrategy}`,
       aiTools: 'Gemini AI - Contenido Completo',
     };
+    
+    // Abre el editor con el contenido completo
     contentCrud.handleEditContent(newContentWithCompleteData as ContentItem);
-    aiGeneration.setGeneratedHook(null);
-    aiGeneration.setGeneratedContent(null);
+    
+    // Mantener los datos generados para que el usuario pueda reutilizarlos
+    console.log('✅ Content editor opened with complete data, keeping AI generated data available');
+  };
+
+  const handleUseHookOnly = (hook: string) => {
+    console.log('💾 Using hook only:', hook);
+    
+    const newContentWithHook: Partial<ContentItem> = {
+        hook: hook,
+        platform: [],
+        type: 'Educativo',
+        duration: '30s',
+        script: '',
+        tags: [],
+        status: 'draft',
+        viralScore: 50,
+        visualElements: '',
+        context: '',
+        cta: '',
+        aiTools: 'Gemini AI - Hook',
+    };
+    
+    contentCrud.handleEditContent(newContentWithHook as ContentItem);
+    console.log('✅ Content editor opened with hook only');
   };
 
   return {
@@ -83,6 +110,7 @@ export function useContentActions() {
     isGeneratingComplete: aiGeneration.isGeneratingComplete,
     setGeneratedHook: aiGeneration.setGeneratedHook,
     handleUseCompleteContent,
+    handleUseHookOnly,
     
     // Utility functions
     closeDialog,

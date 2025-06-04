@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainHeader } from "@/components/MainHeader/MainHeader";
 import { MainTabs } from "@/components/MainTabs/MainTabs";
@@ -45,7 +44,8 @@ const Index = () => {
     generatedContent,
     setGeneratedHook,
     setSelectedContent,
-    handleUseCompleteContent
+    handleUseCompleteContent,
+    handleUseHookOnly
   } = useContentActions();
 
   useEffect(() => {
@@ -107,24 +107,7 @@ const Index = () => {
           onClose={closeDialog}
           onGenerate={handleGenerateAI}
           onGenerateComplete={handleGenerateCompleteContent}
-          onUseHook={(hook) => {
-            const newContentWithHook: Partial<ContentItem> = {
-                hook: hook,
-                platform: [],
-                type: 'Educativo',
-                duration: '30s',
-                script: '',
-                tags: [],
-                status: 'draft',
-                viralScore: 50,
-                visualElements: '',
-                context: '',
-                cta: '',
-                aiTools: '',
-            };
-            handleEditContent(newContentWithHook as ContentItem);
-            setGeneratedHook(null);
-          }}
+          onUseHook={handleUseHookOnly}
           onUseCompleteContent={handleUseCompleteContent}
           isLoading={isAILoading}
           isGeneratingComplete={isGeneratingComplete}

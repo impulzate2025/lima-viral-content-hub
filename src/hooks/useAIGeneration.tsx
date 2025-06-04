@@ -59,6 +59,12 @@ export function useAIGeneration() {
     }
   };
 
+  const clearGeneratedData = () => {
+    console.log('🔄 Clearing generated data');
+    setGeneratedHook(null);
+    setGeneratedContent(null);
+  };
+
   return {
     isAILoading,
     isGeneratingComplete,
@@ -67,6 +73,7 @@ export function useAIGeneration() {
     handleGenerateAI,
     handleGenerateCompleteContent,
     setGeneratedHook,
-    setGeneratedContent
+    setGeneratedContent,
+    clearGeneratedData
   };
 }
