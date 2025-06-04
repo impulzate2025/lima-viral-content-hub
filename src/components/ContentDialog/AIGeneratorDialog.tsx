@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -7,17 +6,21 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ContentType, Platform } from '@/types';
-import { HookGenerationParams } from '@/lib/ai-generator';
-import { Loader2, Copy, Wand2 } from 'lucide-react';
+import { HookGenerationParams, CompleteContentGenerationParams, GeneratedContent } from '@/lib/ai-generator';
+import { Loader2, Copy, Wand2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AIGeneratorDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onGenerate: (params: HookGenerationParams) => Promise<void>;
+  onGenerateComplete: (params: CompleteContentGenerationParams) => Promise<void>;
   onUseHook: (hook: string) => void;
+  onUseCompleteContent: (hook: string, content: GeneratedContent) => void;
   isLoading: boolean;
+  isGeneratingComplete: boolean;
   generatedHook: string | null;
+  generatedContent: GeneratedContent | null;
 }
 
 const PLATFORMS: Platform[] = ['TikTok', 'Instagram', 'YouTube', 'LinkedIn'];
@@ -47,7 +50,18 @@ const CONTENT_TYPE_DESCRIPTIONS = {
   'Autoridad': 'Demostración de expertise y liderazgo'
 };
 
-export function AIGeneratorDialog({ isOpen, onClose, onGenerate, onUseHook, isLoading, generatedHook }: AIGeneratorDialogProps) {
+export function AIGeneratorDialog({ 
+  isOpen, 
+  onClose, 
+  onGenerate, 
+  onGenerateComplete,
+  onUseHook, 
+  onUseCompleteContent,
+  isLoading, 
+  isGeneratingComplete,
+  generatedHook, 
+  generatedContent 
+}: AIGeneratorDialogProps) {
   const [platform, setPlatform] = useState<Platform>('TikTok');
   const [type, setType] = useState<ContentType>('Educativo');
   const [topic, setTopic] = useState('');
@@ -69,6 +83,20 @@ export function AIGeneratorDialog({ isOpen, onClose, onGenerate, onUseHook, isLo
     await onGenerate({ platform, type, topic, audience, context, viralScoreTarget });
   };
 
+  const handleGenerateCompleteContent = async () => {
+    if (!generatedHook) return;
+    
+    await onGenerateComplete({
+      platform,
+      type,
+      topic,
+      audience,
+      context,
+      viralScoreTarget,
+      hook: generatedHook
+    });
+  };
+
   const handleCopyHook = () => {
     if (generatedHook) {
       navigator.clipboard.writeText(generatedHook);
@@ -86,15 +114,22 @@ export function AIGeneratorDialog({ isOpen, onClose, onGenerate, onUseHook, isLo
     }
   };
 
+  const handleUseCompleteGeneratedContent = () => {
+    if (generatedHook && generatedContent) {
+      onUseCompleteContent(generatedHook, generatedContent);
+      onClose();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Wand2 className="mr-2 h-5 w-5 text-primary" /> Generador de Hooks con IA
+            <Wand2 className="mr-2 h-5 w-5 text-primary" /> Generador de Contenido Viral con IA
           </DialogTitle>
           <DialogDescription>
-            Completa los detalles para que la IA genere un gancho viral para tu próximo contenido.
+            Completa los detalles para que la IA genere un gancho viral y el contenido completo para tu próximo post.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
@@ -193,20 +228,98 @@ export function AIGeneratorDialog({ isOpen, onClose, onGenerate, onUseHook, isLo
             <div className="mt-6 p-4 border rounded-md bg-muted">
               <Label className="font-semibold text-lg">Hook Generado:</Label>
               <p className="mt-2 text-md whitespace-pre-wrap">{generatedHook}</p>
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Button type="button" onClick={handleCopyHook} variant="outline" size="sm">
                   <Copy className="mr-2 h-4 w-4" /> Copiar Hook
                 </Button>
-                <Button type="button" onClick={handleUseGeneratedHook} size="sm">
-                  <Wand2 className="mr-2 h-4 w-4" /> Usar este Hook
+                <Button type="button" onClick={handleUseGeneratedHook} size="sm" variant="secondary">
+                  <Wand2 className="mr-2 h-4 w-4" /> Usar Solo Hook
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={handleGenerateCompleteContent} 
+                  size="sm"
+                  disabled={isGeneratingComplete}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  {isGeneratingComplete ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  Generar el Resto de Contenido
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {isGeneratingComplete && (
+            <div className="flex items-center justify-center p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+              <p className="ml-2 text-purple-700">Generando contenido completo con IA...</p>
+            </div>
+          )}
+
+          {generatedContent && !isGeneratingComplete && (
+            <div className="mt-6 p-4 border rounded-md bg-gradient-to-r from-purple-50 to-blue-50">
+              <Label className="font-semibold text-lg text-purple-800">Contenido Completo Generado:</Label>
+              
+              <div className="mt-4 space-y-4">
+                <div>
+                  <Label className="font-medium text-purple-700">Script:</Label>
+                  <p className="mt-1 text-sm bg-white p-3 rounded border max-h-32 overflow-y-auto">{generatedContent.script}</p>
+                </div>
+                
+                <div>
+                  <Label className="font-medium text-purple-700">Elementos Visuales:</Label>
+                  <p className="mt-1 text-sm bg-white p-3 rounded border">{generatedContent.visualElements}</p>
+                </div>
+                
+                <div>
+                  <Label className="font-medium text-purple-700">Call-to-Action:</Label>
+                  <p className="mt-1 text-sm bg-white p-3 rounded border">{generatedContent.cta}</p>
+                </div>
+                
+                <div>
+                  <Label className="font-medium text-purple-700">Estrategia de Distribución:</Label>
+                  <p className="mt-1 text-sm bg-white p-3 rounded border">{generatedContent.distributionStrategy}</p>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-2 bg-white rounded border">
+                    <Label className="text-xs font-medium text-purple-700">Views Estimadas</Label>
+                    <p className="text-lg font-bold text-purple-800">{generatedContent.projectedMetrics.estimatedViews.toLocaleString()}</p>
+                  </div>
+                  <div className="text-center p-2 bg-white rounded border">
+                    <Label className="text-xs font-medium text-purple-700">Engagement</Label>
+                    <p className="text-lg font-bold text-purple-800">{generatedContent.projectedMetrics.estimatedEngagement}%</p>
+                  </div>
+                  <div className="text-center p-2 bg-white rounded border">
+                    <Label className="text-xs font-medium text-purple-700">Shares</Label>
+                    <p className="text-lg font-bold text-purple-800">{generatedContent.projectedMetrics.estimatedShares}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-center">
+                <Button 
+                  type="button" 
+                  onClick={handleUseCompleteGeneratedContent} 
+                  size="lg"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  <Sparkles className="mr-2 h-5 w-5" /> 
+                  Usar Contenido Completo
                 </Button>
               </div>
             </div>
           )}
 
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>Cancelar</Button>
-            <Button type="submit" disabled={isLoading || !topic || !audience}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading || isGeneratingComplete}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading || isGeneratingComplete || !topic || !audience}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />} 
               Generar Hook
             </Button>

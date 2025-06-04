@@ -36,12 +36,16 @@ const Index = () => {
     handleExportSelected,
     handleOpenAIGenerator,
     handleGenerateAI,
+    handleGenerateCompleteContent,
     handleLoadSampleData,
     closeDialog,
     isAILoading,
+    isGeneratingComplete,
     generatedHook,
+    generatedContent,
     setGeneratedHook,
-    setSelectedContent
+    setSelectedContent,
+    handleUseCompleteContent
   } = useContentActions();
 
   useEffect(() => {
@@ -102,6 +106,7 @@ const Index = () => {
           isOpen={dialogType === 'aiGenerator'}
           onClose={closeDialog}
           onGenerate={handleGenerateAI}
+          onGenerateComplete={handleGenerateCompleteContent}
           onUseHook={(hook) => {
             const newContentWithHook: Partial<ContentItem> = {
                 hook: hook,
@@ -120,8 +125,11 @@ const Index = () => {
             handleEditContent(newContentWithHook as ContentItem);
             setGeneratedHook(null);
           }}
+          onUseCompleteContent={handleUseCompleteContent}
           isLoading={isAILoading}
+          isGeneratingComplete={isGeneratingComplete}
           generatedHook={generatedHook}
+          generatedContent={generatedContent}
         />
       )}
 
