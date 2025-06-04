@@ -1,4 +1,3 @@
-
 import Dexie, { Table } from 'dexie';
 import { ContentItem, Campaign, AppSettings, ExportRecord, ContentFilter } from '@/types';
 
@@ -151,79 +150,134 @@ export const initializeSampleData = async (): Promise<void> => {
 };
 
 // Servicios de base de datos
-export const contentService = {
+export class ContentService {
+  db: Dexie;
+
+  constructor() {
+    this.db = db;
+  }
+
   async getAll(): Promise<ContentItem[]> {
     console.log('🔍 contentService.getAll() called');
     
     // Siempre verificar e inicializar datos de prueba si es necesario
     await initializeSampleData();
     
-    const contents = await db.contents.orderBy('updatedAt').reverse().toArray();
+    const contents = await this.db.contents.orderBy('updatedAt').reverse().toArray();
     console.log(`📊 contentService.getAll() returning ${contents.length} contents`);
     return contents;
-  },
+  }
   
   async getByFilter(filter: ContentFilter): Promise<ContentItem[]> {
     console.log('🔍 contentService.getByFilter() called with filter:', filter);
     
-    let query = db.contents.toCollection();
-    
-    // Platform filter - check if any of the content's platforms match the filter
-    if (filter.platform) {
-      console.log(`🏷️ Filtering by platform: ${filter.platform}`);
-      query = query.filter(item => item.platform.includes(filter.platform!));
+    try {
+      let collection = this.db.contents.orderBy('updatedAt');
+      
+      // Aplicar filtros según los criterios
+      if (filter.platform) {
+        console.log('🏷️ Filtering by platform:', filter.platform);
+        collection = collection.filter(item => 
+          item.platform.includes(filter.platform!)
+        );
+      }
+      
+      if (filter.type) {
+        console.log('🏷️ Filtering by type:', filter.type);
+        collection = collection.filter(item => item.type === filter.type);
+      }
+      
+      if (filter.duration) {
+        console.log('🏷️ Filtering by duration:', filter.duration);
+        collection = collection.filter(item => item.duration === filter.duration);
+      }
+      
+      if (filter.status) {
+        console.log('🏷️ Filtering by status:', filter.status);
+        collection = collection.filter(item => item.status === filter.status);
+      }
+      
+      if (filter.hookType) {
+        console.log('🏷️ Filtering by hookType:', filter.hookType);
+        collection = collection.filter(item => {
+          // Buscar el tipo de gancho en el hook, context o aiTools
+          const hookText = (item.hook || '').toLowerCase();
+          const contextText = (item.context || '').toLowerCase();
+          const aiToolsText = (item.aiTools || '').toLowerCase();
+          const searchText = `${hookText} ${contextText} ${aiToolsText}`.toLowerCase();
+          
+          switch (filter.hookType) {
+            case 'shock':
+              return searchText.includes('shock') || 
+                     searchText.includes('impactante') || 
+                     searchText.includes('sorprendente') ||
+                     hookText.includes('no vas a creer') ||
+                     hookText.includes('esto te sorprenderá');
+            case 'storytelling':
+              return searchText.includes('storytelling') || 
+                     searchText.includes('historia') || 
+                     searchText.includes('narrativa') ||
+                     hookText.includes('te voy a contar') ||
+                     hookText.includes('esta es la historia');
+            case 'polemico':
+              return searchText.includes('polémico') || 
+                     searchText.includes('controversial') || 
+                     searchText.includes('debate') ||
+                     hookText.includes('nadie te dice') ||
+                     hookText.includes('la verdad sobre');
+            case 'reto':
+              return searchText.includes('reto') || 
+                     searchText.includes('challenge') || 
+                     searchText.includes('desafío') ||
+                     hookText.includes('si puedes') ||
+                     hookText.includes('atrévete');
+            case 'autoridad':
+              return searchText.includes('autoridad') || 
+                     searchText.includes('experto') || 
+                     searchText.includes('años de experiencia') ||
+                     hookText.includes('como experto') ||
+                     hookText.includes('en mi experiencia');
+            default:
+              return true;
+          }
+        });
+      }
+      
+      if (filter.minViralScore !== undefined) {
+        console.log('🏷️ Filtering by minViralScore:', filter.minViralScore);
+        collection = collection.filter(item => item.viralScore >= filter.minViralScore!);
+      }
+      
+      if (filter.maxViralScore !== undefined) {
+        console.log('🏷️ Filtering by maxViralScore:', filter.maxViralScore);
+        collection = collection.filter(item => item.viralScore <= filter.maxViralScore!);
+      }
+      
+      if (filter.search && typeof filter.search === 'string' && filter.search.trim()) {
+        console.log('🏷️ Filtering by search:', filter.search);
+        const searchTerm = filter.search.toLowerCase().trim();
+        collection = collection.filter(item => {
+          const searchableText = `${item.hook} ${item.script} ${item.context} ${item.tags.join(' ')}`.toLowerCase();
+          return searchableText.includes(searchTerm);
+        });
+      }
+      
+      const results = await collection.toArray();
+      console.log('📊 Current filter state:', filter);
+      console.log(`📊 contentService.getByFilter() returning ${results.length} filtered contents`);
+      
+      return results;
+    } catch (error) {
+      console.error('❌ Error in getByFilter:', error);
+      throw error;
     }
-    
-    // Type filter
-    if (filter.type) {
-      console.log(`🏷️ Filtering by type: ${filter.type}`);
-      query = query.filter(item => item.type === filter.type);
-    }
-    
-    // Status filter
-    if (filter.status) {
-      console.log(`🏷️ Filtering by status: ${filter.status}`);
-      query = query.filter(item => item.status === filter.status);
-    }
-    
-    // Duration filter
-    if (filter.duration) {
-      console.log(`🏷️ Filtering by duration: ${filter.duration}`);
-      query = query.filter(item => item.duration === filter.duration);
-    }
-    
-    // Viral score range filter
-    if (filter.minViralScore !== undefined) {
-      console.log(`🏷️ Filtering by minViralScore: ${filter.minViralScore}`);
-      query = query.filter(item => item.viralScore >= filter.minViralScore!);
-    }
-    if (filter.maxViralScore !== undefined) {
-      console.log(`🏷️ Filtering by maxViralScore: ${filter.maxViralScore}`);
-      query = query.filter(item => item.viralScore <= filter.maxViralScore!);
-    }
-    
-    // Search filter - search in hook, script, and context
-    if (filter.search && filter.search.trim() !== '') {
-      const searchTerm = filter.search.toLowerCase().trim();
-      console.log(`🔍 Filtering by search term: "${searchTerm}"`);
-      query = query.filter(item => 
-        item.hook.toLowerCase().includes(searchTerm) ||
-        item.script.toLowerCase().includes(searchTerm) ||
-        item.context.toLowerCase().includes(searchTerm) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-      );
-    }
-    
-    const results = await query.toArray();
-    console.log(`📊 contentService.getByFilter() returning ${results.length} filtered contents`);
-    return results;
-  },
+  }
   
   async create(content: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     console.log('🔍 contentService.create() called with:', content);
     const now = new Date();
     const id = generateId();
-    await db.contents.add({
+    await this.db.contents.add({
       ...content,
       id,
       createdAt: now,
@@ -231,23 +285,23 @@ export const contentService = {
     });
     console.log(`✅ Created content with id: ${id}`);
     return id;
-  },
+  }
   
   async update(id: string, updates: Partial<ContentItem>): Promise<void> {
     console.log(`🔍 contentService.update() called for id: ${id}`, updates);
-    await db.contents.update(id, {
+    await this.db.contents.update(id, {
       ...updates,
       updatedAt: new Date()
     });
     console.log(`✅ Updated content with id: ${id}`);
-  },
+  }
   
   async delete(id: string): Promise<void> {
     console.log(`🔍 contentService.delete() called for id: ${id}`);
-    await db.contents.delete(id);
+    await this.db.contents.delete(id);
     console.log(`✅ Deleted content with id: ${id}`);
-  },
-
+  }
+  
   async getStats() {
     console.log('🔍 contentService.getStats() called');
     
@@ -280,7 +334,7 @@ export const contentService = {
     console.log('📊 contentService.getStats() returning:', stats);
     return stats;
   }
-};
+}
 
 // ... keep existing code (campaignService)
 export const campaignService = {
@@ -302,3 +356,104 @@ export const campaignService = {
     await db.campaigns.delete(id);
   }
 };
+
+// Ejemplos específicos para cada tipo de gancho
+export const sampleContents: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  {
+    platform: ['TikTok', 'Instagram'],
+    type: 'Shock',
+    hook: 'No vas a creer lo que pasó cuando invertí S/50K en este distrito de Lima - Los resultados te van a SORPRENDER',
+    script: 'Hola, soy [nombre] y hace 6 meses decidí hacer un experimento loco. Invertí exactamente S/50,000 en una propiedad en un distrito que todos me decían que era "peligroso" para invertir. Hoy te voy a mostrar los números REALES y por qué esto cambió completamente mi estrategia de inversión en Lima.',
+    visualElements: 'Video con transiciones rápidas, números grandes en pantalla, antes/después de la zona, gráficos de ROI impactantes',
+    duration: '30s',
+    context: 'Gancho de Shock - Contenido impactante que sorprende',
+    cta: '¿Quieres saber cuál fue el distrito? Comentalo y te mando toda la data por DM',
+    viralScore: 85,
+    aiTools: 'Gemini AI - Gancho de Shock',
+    tags: ['shock', 'inversión', 'lima', 'roi'],
+    status: 'published',
+    metrics: {
+      views: 125000,
+      engagement: 8500,
+      shares: 450
+    }
+  },
+  {
+    platform: ['Instagram', 'YouTube'],
+    type: 'Storytelling',
+    hook: 'Te voy a contar la historia de María, una madre soltera que transformó su vida con una decisión inmobiliaria que cambió todo',
+    script: 'Esta es María. Hace 2 años era madre soltera, trabajaba en un banco y vivía de alquiler pagando S/1,200 al mes. Un día tomó una decisión que la llevó de pagar alquiler a ser propietaria de 3 departamentos. Te voy a contar exactamente cómo lo hizo y por qué su estrategia puede funcionar para ti también.',
+    visualElements: 'Fotos de María, timeline visual de su progreso, propiedades actuales, testimonial en video',
+    duration: '60s',
+    context: 'Gancho de Storytelling - Narrativa envolvente y emocional',
+    cta: 'Si María pudo hacerlo, tú también puedes. ¿Quieres conocer su estrategia completa? Link en bio',
+    viralScore: 78,
+    aiTools: 'Gemini AI - Gancho de Storytelling',
+    tags: ['storytelling', 'historia', 'transformación', 'madre-soltera'],
+    status: 'published',
+    metrics: {
+      views: 89000,
+      engagement: 6200,
+      shares: 320
+    }
+  },
+  {
+    platform: ['TikTok', 'LinkedIn'],
+    type: 'Controversial',
+    hook: 'La verdad sobre Miraflores que ningún broker te va a decir - Por qué puede ser tu PEOR inversión en 2024',
+    script: 'Todos piensan que Miraflores es la zona premium de Lima para invertir. Pero después de analizar 200 transacciones inmobiliarias en los últimos 2 años, descubrí algo que va a cambiar tu perspectiva completamente. Te voy a mostrar la data REAL que los brokers no quieren que sepas.',
+    visualElements: 'Gráficos comparativos, data de precios, mapa de Lima, estadísticas sorprendentes',
+    duration: '30s',
+    context: 'Gancho Polémico - Desafía ideas establecidas sobre Miraflores',
+    cta: '¿Te atreves a ver toda la data? Desliza para conocer los números que cambiarán tu opinión',
+    viralScore: 92,
+    aiTools: 'Gemini AI - Gancho Polémico',
+    tags: ['polémico', 'miraflores', 'data', 'inversión'],
+    status: 'published',
+    metrics: {
+      views: 156000,
+      engagement: 12300,
+      shares: 780
+    }
+  },
+  {
+    platform: ['TikTok', 'Instagram'],
+    type: 'Reto',
+    hook: 'RETO: Si puedes encontrar una mejor inversión que esta con S/80K en Lima, te regalo S/1000',
+    script: 'Estoy tan seguro de esta oportunidad de inversión en Lima que te lanzo este reto: Si encuentras una mejor opción con S/80K que dé mejor ROI que esta, te regalo S/1000 en efectivo. Te voy a mostrar todos los números, la ubicación, y por qué estoy dispuesto a apostar mi dinero.',
+    visualElements: 'Countdown timer, números del ROI, ubicación del inmueble, términos del reto',
+    duration: '30s',
+    context: 'Gancho de Reto - Desafío viral con premio real',
+    cta: '¿Aceptas el reto? Comenta "ACEPTO" y te mando todos los detalles',
+    viralScore: 88,
+    aiTools: 'Gemini AI - Gancho de Reto',
+    tags: ['reto', 'challenge', 'inversión', 'premio'],
+    status: 'published',
+    metrics: {
+      views: 134000,
+      engagement: 9800,
+      shares: 560
+    }
+  },
+  {
+    platform: ['LinkedIn', 'YouTube'],
+    type: 'Educativo',
+    hook: 'Como experto en Real Estate con 12 años de experiencia, estos son los 5 errores que destruyen el 90% de las inversiones en Lima',
+    script: 'En mis 12 años como especialista en Real Estate he visto más de 1000 transacciones. El 90% de los inversionistas primerizos cometen estos 5 errores que literalmente destruyen su rentabilidad. Hoy voy a compartir contigo mi conocimiento para que no seas parte de esa estadística.',
+    visualElements: 'Credenciales profesionales, estadísticas de experiencia, casos reales de errores, soluciones prácticas',
+    duration: '60s',
+    context: 'Gancho de Autoridad - Demostración de expertise y liderazgo',
+    cta: 'Si quieres evitar estos errores y maximizar tu ROI, agenda una consulta gratuita conmigo',
+    viralScore: 82,
+    aiTools: 'Gemini AI - Gancho de Autoridad',
+    tags: ['autoridad', 'experto', 'experiencia', 'errores-comunes'],
+    status: 'published',
+    metrics: {
+      views: 76000,
+      engagement: 5400,
+      shares: 280
+    }
+  }
+];
+
+export const contentService = new ContentService();

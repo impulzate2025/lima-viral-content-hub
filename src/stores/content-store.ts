@@ -100,10 +100,43 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     console.log('🔍 useContentStore.applyFilter() called with filter:', currentFilter);
     console.log(`📊 Applying filter to ${contents.length} total contents`);
     
+    // Limpiar filtros con valores indefinidos o inválidos
+    const cleanFilter: ContentFilter = {};
+    
+    if (currentFilter.platform && currentFilter.platform !== '') {
+      cleanFilter.platform = currentFilter.platform;
+    }
+    
+    if (currentFilter.type && currentFilter.type !== '') {
+      cleanFilter.type = currentFilter.type;
+    }
+    
+    if (currentFilter.duration && currentFilter.duration !== '') {
+      cleanFilter.duration = currentFilter.duration;
+    }
+    
+    if (currentFilter.status && currentFilter.status !== '') {
+      cleanFilter.status = currentFilter.status;
+    }
+    
+    if (currentFilter.hookType && currentFilter.hookType !== '') {
+      cleanFilter.hookType = currentFilter.hookType;
+    }
+    
+    if (currentFilter.minViralScore !== undefined && currentFilter.minViralScore !== null) {
+      cleanFilter.minViralScore = currentFilter.minViralScore;
+    }
+    
+    if (currentFilter.maxViralScore !== undefined && currentFilter.maxViralScore !== null) {
+      cleanFilter.maxViralScore = currentFilter.maxViralScore;
+    }
+    
+    if (currentFilter.search && typeof currentFilter.search === 'string' && currentFilter.search.trim() !== '') {
+      cleanFilter.search = currentFilter.search.trim();
+    }
+    
     // Si no hay filtros activos, mostrar todos los contenidos
-    const hasActiveFilters = Object.values(currentFilter).some(value => 
-      value !== undefined && value !== '' && value !== null
-    );
+    const hasActiveFilters = Object.keys(cleanFilter).length > 0;
     
     if (!hasActiveFilters) {
       console.log('📊 No active filters, showing all contents');
@@ -112,7 +145,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     }
     
     try {
-      const filteredContents = await contentService.getByFilter(currentFilter);
+      const filteredContents = await contentService.getByFilter(cleanFilter);
       console.log(`📊 Filter applied, showing ${filteredContents.length} filtered contents`);
       set({ filteredContents });
     } catch (error) {
@@ -122,3 +155,4 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     }
   }
 }));
+

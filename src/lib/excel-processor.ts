@@ -1,7 +1,37 @@
-
 import * as XLSX from 'xlsx';
 import { ContentItem, Platform, ContentType, Duration, ContentStatus } from '@/types';
 import { generateId } from './database';
+
+function detectHookType(hook: string, context: string = '', aiTools: string = ''): string {
+  const text = `${hook} ${context} ${aiTools}`.toLowerCase();
+  
+  if (text.includes('shock') || text.includes('impactante') || text.includes('sorprend') || 
+      text.includes('no vas a creer') || text.includes('increíble')) {
+    return 'Gancho de Shock';
+  }
+  
+  if (text.includes('storytelling') || text.includes('historia') || text.includes('narrativa') ||
+      text.includes('te voy a contar') || text.includes('érase una vez')) {
+    return 'Gancho de Storytelling';
+  }
+  
+  if (text.includes('polémico') || text.includes('controversial') || text.includes('debate') ||
+      text.includes('nadie te dice') || text.includes('la verdad sobre')) {
+    return 'Gancho Polémico';
+  }
+  
+  if (text.includes('reto') || text.includes('challenge') || text.includes('desafío') ||
+      text.includes('si puedes') || text.includes('atrévete')) {
+    return 'Gancho de Reto';
+  }
+  
+  if (text.includes('autoridad') || text.includes('experto') || text.includes('años de experiencia') ||
+      text.includes('como experto') || text.includes('en mi experiencia')) {
+    return 'Gancho de Autoridad';
+  }
+  
+  return 'Sin clasificar';
+}
 
 export class ExcelProcessor {
   async processFile(file: File): Promise<ContentItem[]> {
@@ -154,6 +184,49 @@ export class ExcelProcessor {
     
     return new Blob([XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+  }
+  
+  processExcelData(data: any[]): Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>[] {
+    console.log('📊 ExcelProcessor: Processing Excel data, rows:', data.length);
+    
+    return data.slice(1).map((row, index) => {
+      try {
+        const hook = String(row[0] || '').trim();
+        const context = String(row[6] || '').trim();
+        const aiTools = String(row[9] || '').trim();
+        
+        // Detectar tipo de gancho automáticamente
+        const detectedHookType = detectHookType(hook, context, aiTools);
+        
+        const content: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'> = {
+          hook,
+          script: String(row[1] || '').trim(),
+          visualElements: String(row[2] || '').trim(),
+          platform: this.parsePlatforms(String(row[3] || '')),
+          type: this.parseContentType(String(row[4] || '')),
+          duration: this.parseDuration(String(row[5] || '')),
+          context: `${context}${detectedHookType !== 'Sin clasificar' ? ` | ${detectedHookType}` : ''}`,
+          cta: String(row[7] || '').trim(),
+          viralScore: this.parseViralScore(row[8]),
+          aiTools: aiTools || 'Manual',
+          tags: this.parseTags(String(row[10] || '')),
+          status: this.parseStatus(String(row[11] || '')) as ContentStatus,
+          metrics: this.parseMetrics(row.slice(12, 17))
+        };
+
+        console.log(`📊 Processed row ${index + 1}:`, {
+          hook: content.hook.substring(0, 50) + '...',
+          detectedHookType,
+          platforms: content.platform.length,
+          type: content.type
+        });
+
+        return content;
+      } catch (error) {
+        console.error(`❌ Error processing row ${index + 1}:`, error);
+        throw new Error(`Error en fila ${index + 2}: ${error}`);
+      }
     });
   }
 }
