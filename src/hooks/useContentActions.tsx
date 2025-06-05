@@ -1,4 +1,3 @@
-
 import { useContentStore } from "@/stores/content-store";
 import { useContentCrud } from "@/hooks/useContentCrud";
 import { useAIGeneration } from "@/hooks/useAIGeneration";
@@ -55,7 +54,7 @@ export function useContentActions() {
     aiGeneration.setGeneratedHook(hook);
     
     // Luego abrir el editor con el contenido completo
-    contentCrud.setDialogType('edit');
+    contentCrud.setDialogType('editor');
     contentCrud.setSelectedContent(newContentWithCompleteData as ContentItem);
     
     console.log('✅ Content editor opened with complete data, AI data preserved');
@@ -83,7 +82,7 @@ export function useContentActions() {
     aiGeneration.setGeneratedHook(hook);
     
     // Abrir el editor con solo el hook
-    contentCrud.setDialogType('edit');
+    contentCrud.setDialogType('editor');
     contentCrud.setSelectedContent(newContentWithHook as ContentItem);
     
     console.log('✅ Content editor opened with hook only, AI data preserved');
