@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ContentType, Platform } from '@/types';
 import { HookGenerationParams, CompleteContentGenerationParams, GeneratedContent } from '@/lib/ai-generator';
-import { Loader2, Copy, Wand2, Sparkles } from 'lucide-react';
+import { Loader2, Copy, Wand2, Sparkles, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AIGeneratorDialogProps {
@@ -110,14 +110,20 @@ export function AIGeneratorDialog({
   const handleUseGeneratedHook = () => {
     if (generatedHook) {
       onUseHook(generatedHook);
-      onClose(); 
+      toast({
+        title: "Hook Guardado",
+        description: "El hook se ha guardado y puedes editarlo en el formulario de contenido."
+      });
     }
   };
 
   const handleUseCompleteGeneratedContent = () => {
     if (generatedHook && generatedContent) {
       onUseCompleteContent(generatedHook, generatedContent);
-      onClose();
+      toast({
+        title: "Contenido Completo Guardado",
+        description: "El contenido completo se ha guardado y puedes editarlo en el formulario."
+      });
     }
   };
 
@@ -131,6 +137,18 @@ export function AIGeneratorDialog({
           <DialogDescription>
             Completa los detalles para que la IA genere un gancho viral y el contenido completo para tu próximo post.
           </DialogDescription>
+          
+          {/* Información sobre el sistema */}
+          <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium mb-1">¿Cómo funciona?</p>
+              <p>1. Genera un hook con IA</p>
+              <p>2. Opcionalmente, genera el contenido completo</p>
+              <p>3. Usa "Usar Solo Hook" o "Usar Contenido Completo" para guardarlo</p>
+              <p>4. Tu contenido se guardará en la lista y podrás editarlo cuando quieras</p>
+            </div>
+          </div>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-4">
@@ -180,7 +198,7 @@ export function AIGeneratorDialog({
               id="topic" 
               value={topic} 
               onChange={(e) => setTopic(e.target.value)} 
-              placeholder="Ej: El mejor ceviche de Lima, Inversión inmobiliaria, Marketing digital" 
+              placeholder="Ej: Los 3 distritos de Lima con mayor potencial para 2025" 
             />
           </div>
           <div>
@@ -198,7 +216,7 @@ export function AIGeneratorDialog({
               id="context" 
               value={context} 
               onChange={(e) => setContext(e.target.value)} 
-              placeholder="Ej: Temporada de verano, Crisis económica, Tendencia viral actual" 
+              placeholder="Ej: Jóvenes que quieren usar su primer ahorro, tendencias 2025" 
               rows={3}
             />
           </div>
@@ -220,7 +238,7 @@ export function AIGeneratorDialog({
           {isLoading && (
             <div className="flex items-center justify-center p-6">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="ml-2">Generando hook con IA...</p>
+              <p className="ml-2">Generando hook con IA para 2025...</p>
             </div>
           )}
 
@@ -317,7 +335,7 @@ export function AIGeneratorDialog({
 
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading || isGeneratingComplete}>
-              Cancelar
+              Cerrar
             </Button>
             <Button type="submit" disabled={isLoading || isGeneratingComplete || !topic || !audience}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />} 

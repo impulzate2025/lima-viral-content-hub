@@ -40,8 +40,8 @@ export function useContentActions() {
       script: content.script,
       visualElements: content.visualElements,
       cta: content.cta,
-      platform: [],
-      type: 'Educativo',
+      platform: ['TikTok'], // Valor por defecto
+      type: 'Educativo', // Valor por defecto
       duration: '30s',
       tags: [content.distributionStrategy.split(',')[0]?.trim() || 'AI Generated'],
       status: 'draft',
@@ -50,11 +50,15 @@ export function useContentActions() {
       aiTools: 'Gemini AI - Contenido Completo',
     };
     
-    // Abre el editor con el contenido completo
-    contentCrud.handleEditContent(newContentWithCompleteData as ContentItem);
+    // Primero cerrar el diálogo AI para evitar conflictos
+    aiGeneration.setGeneratedContent(content);
+    aiGeneration.setGeneratedHook(hook);
     
-    // Mantener los datos generados para que el usuario pueda reutilizarlos
-    console.log('✅ Content editor opened with complete data, keeping AI generated data available');
+    // Luego abrir el editor con el contenido completo
+    contentCrud.setDialogType('edit');
+    contentCrud.setSelectedContent(newContentWithCompleteData as ContentItem);
+    
+    console.log('✅ Content editor opened with complete data, AI data preserved');
   };
 
   const handleUseHookOnly = (hook: string) => {
@@ -62,7 +66,7 @@ export function useContentActions() {
     
     const newContentWithHook: Partial<ContentItem> = {
         hook: hook,
-        platform: [],
+        platform: ['TikTok'], // Valor por defecto
         type: 'Educativo',
         duration: '30s',
         script: '',
@@ -75,8 +79,14 @@ export function useContentActions() {
         aiTools: 'Gemini AI - Hook',
     };
     
-    contentCrud.handleEditContent(newContentWithHook as ContentItem);
-    console.log('✅ Content editor opened with hook only');
+    // Preservar el hook generado
+    aiGeneration.setGeneratedHook(hook);
+    
+    // Abrir el editor con solo el hook
+    contentCrud.setDialogType('edit');
+    contentCrud.setSelectedContent(newContentWithHook as ContentItem);
+    
+    console.log('✅ Content editor opened with hook only, AI data preserved');
   };
 
   return {
