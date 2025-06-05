@@ -51,6 +51,9 @@ const STATUS_LABELS = {
 };
 
 export function ContentEditor({ content, onSave, onCancel }: ContentEditorProps) {
+  // Determinar si es nuevo contenido (sin ID válido o ID vacío)
+  const isNewContent = !content || !content.id || content.id === '';
+  
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(content?.platform || []);
   const [viralScore, setViralScore] = useState<number[]>([content?.viralScore || 50]);
   const [showPreview, setShowPreview] = useState(false);
@@ -132,7 +135,7 @@ export function ContentEditor({ content, onSave, onCancel }: ContentEditorProps)
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>
-              {content ? 'Editar Contenido' : 'Nuevo Contenido Viral'}
+              {isNewContent ? 'Nuevo Contenido Viral' : 'Editar Contenido'}
             </CardTitle>
             <div className="flex gap-2">
               <Button
@@ -374,7 +377,7 @@ export function ContentEditor({ content, onSave, onCancel }: ContentEditorProps)
             <div className="flex gap-3 pt-6 border-t">
               <Button type="submit" className="bg-gradient-to-r from-[#4ECDC4] to-[#44A08D] hover:from-[#44A08D] hover:to-[#4ECDC4] text-white">
                 <Save className="h-4 w-4 mr-2" />
-                {content ? 'Actualizar' : 'Guardar'} Contenido
+                {isNewContent ? 'Guardar' : 'Actualizar'} Contenido
               </Button>
               <Button type="button" variant="outline" onClick={onCancel}>
                 <X className="h-4 w-4 mr-2" />

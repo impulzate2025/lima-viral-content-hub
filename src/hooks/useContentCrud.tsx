@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useContentStore } from "@/stores/content-store";
 import { useToast } from "@/hooks/use-toast";
@@ -37,7 +36,10 @@ export function useContentCrud() {
 
   const handleSaveContent = async (contentData: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      if (selectedContent) {
+      // Verificar si selectedContent tiene un ID válido para determinar si es actualización o creación
+      const isUpdate = selectedContent && selectedContent.id && selectedContent.id !== undefined;
+      
+      if (isUpdate) {
         console.log('🔍 Updating existing content:', selectedContent.id);
         await updateContent(selectedContent.id, contentData);
         toast({
@@ -45,7 +47,7 @@ export function useContentCrud() {
           description: "El contenido se ha actualizado exitosamente."
         });
       } else {
-        console.log('🔍 Creating new content');
+        console.log('🔍 Creating new content (from AI or new)');
         await addContent(contentData);
         toast({
           title: "Contenido creado",

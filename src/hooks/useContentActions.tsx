@@ -1,3 +1,4 @@
+
 import { useContentStore } from "@/stores/content-store";
 import { useContentCrud } from "@/hooks/useContentCrud";
 import { useAIGeneration } from "@/hooks/useAIGeneration";
@@ -34,7 +35,8 @@ export function useContentActions() {
   const handleUseCompleteContent = (hook: string, content: GeneratedContent) => {
     console.log('💾 Using complete content:', { hook, content });
     
-    const newContentWithCompleteData: Partial<ContentItem> = {
+    // Crear un objeto sin ID para forzar creación de nuevo contenido
+    const newContentWithCompleteData = {
       hook: hook,
       script: content.script,
       visualElements: content.visualElements,
@@ -47,23 +49,33 @@ export function useContentActions() {
       viralScore: Math.round((content.projectedMetrics.estimatedEngagement * 10) / 100),
       context: `Estrategia: ${content.distributionStrategy}`,
       aiTools: 'Gemini AI - Contenido Completo',
-    };
+    } as Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>;
     
-    // Primero cerrar el diálogo AI para evitar conflictos
+    // Preservar datos de IA
     aiGeneration.setGeneratedContent(content);
     aiGeneration.setGeneratedHook(hook);
     
-    // Luego abrir el editor con el contenido completo
+    // Abrir editor con contenido completo - sin ID para que se cree como nuevo
     contentCrud.setDialogType('editor');
-    contentCrud.setSelectedContent(newContentWithCompleteData as ContentItem);
+    contentCrud.setSelectedContent(null); // Pasar null para indicar que es nuevo contenido
     
-    console.log('✅ Content editor opened with complete data, AI data preserved');
+    // Establecer los datos temporalmente para que el editor los use
+    contentCrud.setSelectedContent({
+      ...newContentWithCompleteData,
+      id: '', // ID vacío para indicar que es nuevo
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      metrics: undefined
+    } as ContentItem);
+    
+    console.log('✅ Content editor opened with complete data for new content');
   };
 
   const handleUseHookOnly = (hook: string) => {
     console.log('💾 Using hook only:', hook);
     
-    const newContentWithHook: Partial<ContentItem> = {
+    // Crear un objeto sin ID para forzar creación de nuevo contenido
+    const newContentWithHook = {
         hook: hook,
         platform: ['TikTok'], // Valor por defecto
         type: 'Educativo',
@@ -76,16 +88,25 @@ export function useContentActions() {
         context: '',
         cta: '',
         aiTools: 'Gemini AI - Hook',
-    };
+    } as Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>;
     
     // Preservar el hook generado
     aiGeneration.setGeneratedHook(hook);
     
-    // Abrir el editor con solo el hook
+    // Abrir editor con solo el hook - sin ID para que se cree como nuevo
     contentCrud.setDialogType('editor');
-    contentCrud.setSelectedContent(newContentWithHook as ContentItem);
+    contentCrud.setSelectedContent(null); // Pasar null para indicar que es nuevo contenido
     
-    console.log('✅ Content editor opened with hook only, AI data preserved');
+    // Establecer los datos temporalmente para que el editor los use
+    contentCrud.setSelectedContent({
+      ...newContentWithHook,
+      id: '', // ID vacío para indicar que es nuevo
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      metrics: undefined
+    } as ContentItem);
+    
+    console.log('✅ Content editor opened with hook only for new content');
   };
 
   return {
