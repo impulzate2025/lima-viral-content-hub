@@ -23,7 +23,8 @@ export class ContentValidator {
       'explotar', 'explotarán', 'explota', 'explotaron',
       'boom', 'estallar', 'estalla', 'estallarán', 'estallaron',
       'gigante', 'gigantesco', 'gigantes', 'gigantesca',
-      'loco', 'loca', 'locos', 'locas', 'increíble', 'increíbles'
+      'loco', 'loca', 'locos', 'locas', 'increíble', 'increíbles',
+      'madre', 'madres'
     ],
     replacements: {
       'explotar': 'crecer significativamente',
@@ -44,12 +45,15 @@ export class ContentValidator {
       'locos': 'extraordinarios',
       'locas': 'extraordinarias',
       'increíble': 'excepcional',
-      'increíbles': 'excepcionales'
+      'increíbles': 'excepcionales',
+      'madre': 'cliente',
+      'madres': 'clientes'
     },
     approvedVocabulary: [
       'revalorizar', 'crecimiento', 'oportunidad', 'potencial',
       'demanda', 'inversión', 'rentabilidad', 'valorización',
-      'estratégico', 'sólido', 'sostenible', 'proyección'
+      'estratégico', 'sólido', 'sostenible', 'proyección',
+      'cliente', 'inversionista', 'profesional', 'joven'
     ]
   };
 
@@ -168,6 +172,11 @@ RESTRICCIONES CRÍTICAS - OBLIGATORIAS:
 - Solo emojis profesionales: 🏠 🏢 📈 💰 ✅ 🎯 (máximo 2)
 - Máximo 2 signos de exclamación por texto
 - Lenguaje: Profesional inmobiliario, no coloquial
+
+ESTRUCTURA DE CTA OBLIGATORIA:
+- El agente debe ser LA SOLUCIÓN, no enviar a "buscar asesoría"
+- CTAs específicos: "Agenda tu consulta gratuita conmigo", "Envíame un DM para el análisis completo", "Te ayudo a encontrar tu propiedad ideal"
+- NUNCA: "busca asesoría profesional", "investiga por tu cuenta", "consulta con expertos"
 
 VOCABULARIO PROFESIONAL APROBADO:
 ${this.config.approvedVocabulary.join(', ')}

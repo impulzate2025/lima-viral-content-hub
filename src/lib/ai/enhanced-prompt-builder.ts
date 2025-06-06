@@ -1,3 +1,4 @@
+
 import { HookGenerationParams, CompleteContentGenerationParams } from '../ai-generator';
 import { generateHookTypePrompt } from './enhanced-hook-types';
 import { getContentTemplateForType, getDayThemeRecommendation, LIMA_CONTENT_TEMPLATES } from './lima-content-templates';
@@ -136,6 +137,25 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
 
 **Hashtags Sugeridos:** ${hashtags.join(', ')}
 
+**ESTRUCTURA OBLIGATORIA PARA CTA:**
+- TÚ eres el experto que puede resolver su problema
+- Ofrece valor específico: "Te comparto el análisis completo", "Agenda tu consulta gratuita"
+- Crea urgencia sin presión: "Solo 3 consultas disponibles esta semana"
+- NUNCA digas: "busca asesoría", "investiga", "consulta con expertos"
+- SIEMPRE: "Envíame DM", "Agenda conmigo", "Te ayudo a", "Descarga mi guía"
+
+**EJEMPLOS DE CTA CORRECTOS:**
+- "Envíame un DM con 'DISTRITOS' y te comparto el análisis completo de estas 3 zonas"
+- "Agenda tu consulta gratuita conmigo - link en mi bio - y evaluamos tu mejor opción"
+- "Descarga mi guía gratuita 'Inversión Lima 2025' - solo por WhatsApp al 999-XXX-XXX"
+- "Te ayudo a encontrar tu primera propiedad. Comentarios 'QUIERO' y te contacto"
+
+**EJEMPLOS DE CTA PROHIBIDOS:**
+- ❌ "Busca asesoría profesional"
+- ❌ "Investiga propiedades en estas zonas"  
+- ❌ "Consulta con expertos"
+- ❌ "Analiza su potencial de rentabilidad"
+
 **Contexto Completo del Contenido:**
 - Plataforma: ${params.platform}
 - Tipo de Gancho: ${params.type}
@@ -150,14 +170,13 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
 
 1. **Script Completo (150-${ContentValidator['config'].maxScriptWords} palabras):**
    - Debe ser una continuación lógica y fluida del HOOK.
-   - ${template ? `Sigue la estructura del template ${template.name}` : 'Estructura: Problema → Solución → Beneficios → Evidencia/Ejemplos → Llamada a la acción.'}
+   - ${template ? `Sigue la estructura del template ${template.name}` : 'Estructura: Problema → Solución → Beneficios → Evidencia/Ejemplos → TÚ como la solución.'}
    - Tono: Consistente con el tipo de gancho "${params.type}" y la plataforma ${params.platform}.
    - UTILIZA los datos contextuales específicos proporcionados (precios, proyectos, casos de éxito).
-   - Incluye frases clave, datos relevantes sobre Lima (distritos, precios, tendencias, etc.).
-   - Asegura coherencia gramatical y léxica en español de Lima.
-   - Incorpora elementos específicos del mercado inmobiliario peruano 2025.
+   - El agente debe posicionarse como LA SOLUCIÓN al problema presentado.
+   - Incluye casos específicos SIN usar "madre" o referencias familiares irrelevantes.
    - USA SOLO vocabulario profesional inmobiliario aprobado.
-   - INCLUYE una llamada a la acción específica y clara.
+   - TERMINA con CTA donde TÚ eres quien ayuda, no donde envías a "buscar ayuda".
 
 2. **Elementos Visuales Sugeridos:**
    ${this.getPlatformVisualGuide(params.platform)}
@@ -165,11 +184,11 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
    ${template ? `- Elementos visuales del template: ${template.structure.join(', ')}` : ''}
 
 3. **CTA Optimizado (Llamada a la Acción):**
-   - Debe ser ÚNICO, CLARO y ORIENTADO A LA ACCIÓN.
-   - ${template ? `Inspirado en: "${template.examples.cta}"` : 'CTA genérico optimizado'}
+   - Debe ser ÚNICO, CLARO y donde TÚ eres la solución.
+   - ${template ? `Inspirado en: "${template.examples.cta}"` : 'CTA específico donde ofreces tu servicio directo'}
    - Adapta el CTA a ${params.platform} y al objetivo de viralidad ${params.viralScoreTarget}.
-   - Sugiere dónde colocar el CTA (al final del video, en la descripción, link en bio).
-   - Ejemplos efectivos: "Agenda asesoría gratuita", "Descarga la guía de distritos 2025", "Envíanos un DM para más info".
+   - EJEMPLOS CORRECTOS: "Agenda conmigo", "Te ayudo", "Descarga mi guía", "Envíame DM"
+   - PROHIBIDO: "busca", "investiga", "consulta con otros", "analiza por tu cuenta"
 
 4. **Estrategia de Distribución:**
    **Horarios:** ${this.getPlatformTimingGuide(params.platform)}
@@ -182,12 +201,18 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
 **Contexto Específico de Lima 2025:**
 ${this.buildDetailedLimaContext(districtData, marketInsights)}
 
+**RECORDATORIO FINAL:**
+- NUNCA uses "madre", "busca asesoría", "investiga", "consulta con expertos"
+- SIEMPRE posiciona al agente como LA SOLUCIÓN
+- Casos de éxito específicos: "Un joven profesional", "Una pareja", "Un inversionista"
+- CTA debe generar acción HACIA el agente, no hacia otros
+
 Responde ÚNICAMENTE con el JSON válido en esta estructura exacta:
 
 {
-  "script": "Script completo desarrollando el hook de manera fluida y persuasiva...",
+  "script": "Script completo desarrollando el hook de manera fluida y persuasiva, terminando con CTA donde TÚ eres la solución...",
   "visualElements": "Descripción detallada de elementos visuales específicos para ${params.platform}...",
-  "cta": "Call-to-action optimizado y específico...",
+  "cta": "Call-to-action optimizado donde TÚ ayudas directamente, no envías a buscar ayuda...",
   "distributionStrategy": "Estrategia completa: horarios, hashtags, técnicas de crecimiento...",
   "projectedMetrics": {
     "estimatedViews": número_realista_de_vistas,
