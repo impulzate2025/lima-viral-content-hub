@@ -4,6 +4,7 @@ import { EnhancedPromptBuilder } from './ai/enhanced-prompt-builder';
 import { GeminiClient } from './ai/gemini-client';
 import { ResponseProcessor } from './ai/response-processor';
 import { ContentQualityValidator } from './content-quality-validator';
+import { ContentValidator } from './ai/content-validator';
 import { HookGenerationParams, CompleteContentGenerationParams, GeneratedContent } from './ai-generator';
 
 export class EnhancedAIContentGenerator {
@@ -17,12 +18,14 @@ export class EnhancedAIContentGenerator {
     hook: string;
     qualityScore: any;
     attempts: number;
+    validationResult?: any;
   }> {
-    console.log("🚀 Generando hook mejorado con datos contextuales...");
+    console.log("🚀 Generando hook mejorado con validación de calidad...");
     
     let attempts = 0;
     let bestHook = '';
     let bestScore = 0;
+    let bestValidation = null;
     const maxAttempts = 3;
     
     while (attempts < maxAttempts) {
@@ -31,7 +34,17 @@ export class EnhancedAIContentGenerator {
       
       const prompt = EnhancedPromptBuilder.buildEnhancedHookPrompt(params);
       const generatedText = await this.geminiClient.generateContent(prompt, 0.9, 2048);
-      const processedHook = ResponseProcessor.processHookResponse(generatedText);
+      let processedHook = ResponseProcessor.processHookResponse(generatedText);
+      
+      // Validación crítica - Paso 1: Pre-validación
+      console.log(`📝 Hook generado (bruto): "${processedHook}"`);
+      const validation = ContentValidator.validateHook(processedHook);
+      
+      // Si hay corrección automática, usar la versión corregida
+      if (validation.correctedContent) {
+        console.log(`🔧 Hook corregido automáticamente: "${validation.correctedContent}"`);
+        processedHook = validation.correctedContent;
+      }
       
       // Validar calidad del hook
       const qualityScore = ContentQualityValidator.validateContent(
@@ -41,23 +54,34 @@ export class EnhancedAIContentGenerator {
         params.audience
       );
       
-      console.log(`📊 Hook generado (intento ${attempts}): "${processedHook}"`);
+      console.log(`📊 Hook final (intento ${attempts}): "${processedHook}"`);
+      console.log(`📊 Puntuación de validación: ${validation.score}/100`);
       console.log(`📊 Puntuación de calidad: ${qualityScore.overall_score}/100`);
       
+      if (validation.issues.length > 0) {
+        console.log(`⚠️ Issues detectados:`, validation.issues);
+      }
+      
+      // Combinar puntuaciones (validación tiene prioridad)
+      const combinedScore = Math.min(validation.score, qualityScore.overall_score);
+      
       // Si la calidad es buena o es el último intento, usar este hook
-      if (qualityScore.overall_score > bestScore || attempts === maxAttempts) {
+      if (combinedScore > bestScore || attempts === maxAttempts) {
         bestHook = processedHook;
-        bestScore = qualityScore.overall_score;
+        bestScore = combinedScore;
+        bestValidation = validation;
         
-        // Si la calidad es excelente (>85), no necesitamos más intentos
-        if (qualityScore.overall_score >= 85) {
-          console.log("✅ Hook de alta calidad generado");
-          return {
-            hook: bestHook,
-            qualityScore,
-            attempts
-          };
+        // Si la calidad es excelente (>85) y pasa validación, no necesitamos más intentos
+        if (combinedScore >= 85 && validation.isValid) {
+          console.log("✅ Hook de alta calidad y validado generado");
+          break;
         }
+      }
+      
+      // Si la validación falló crítica, intentar de nuevo
+      if (!validation.isValid && attempts < maxAttempts) {
+        console.log(`🔄 Validación falló, reintentando...`);
+        continue;
       }
     }
     
@@ -73,19 +97,31 @@ export class EnhancedAIContentGenerator {
     return {
       hook: bestHook,
       qualityScore: finalQualityScore,
-      attempts
+      attempts,
+      validationResult: bestValidation
     };
   }
 
   async generateEnhancedCompleteContent(params: CompleteContentGenerationParams): Promise<{
     content: GeneratedContent;
     qualityScore: any;
+    validationResult?: any;
   }> {
-    console.log("🚀 Generando contenido completo mejorado con datos contextuales...");
+    console.log("🚀 Generando contenido completo mejorado con validación...");
     
     const prompt = EnhancedPromptBuilder.buildEnhancedCompleteContentPrompt(params);
     const generatedText = await this.geminiClient.generateContent(prompt, 0.8, 4096);
-    const processedContent = ResponseProcessor.processCompleteContentResponse(generatedText);
+    let processedContent = ResponseProcessor.processCompleteContentResponse(generatedText);
+    
+    // Validación crítica del script
+    console.log(`📝 Script generado (bruto): "${processedContent.script.substring(0, 100)}..."`);
+    const scriptValidation = ContentValidator.validateScript(processedContent.script);
+    
+    // Si hay corrección automática, usar la versión corregida
+    if (scriptValidation.correctedContent) {
+      console.log(`🔧 Script corregido automáticamente`);
+      processedContent.script = scriptValidation.correctedContent;
+    }
     
     // Validar calidad del contenido completo
     const qualityScore = ContentQualityValidator.validateContent(
@@ -96,17 +132,23 @@ export class EnhancedAIContentGenerator {
     );
     
     console.log(`📊 Contenido completo generado`);
-    console.log(`📊 Puntuación de calidad: ${qualityScore.overall_score}/100`);
+    console.log(`📊 Puntuación de validación script: ${scriptValidation.score}/100`);
+    console.log(`📊 Puntuación de calidad general: ${qualityScore.overall_score}/100`);
+    
+    if (scriptValidation.issues.length > 0) {
+      console.log(`⚠️ Issues detectados en script:`, scriptValidation.issues);
+    }
     
     if (qualityScore.suggestions.length > 0) {
       console.log(`💡 Sugerencias de mejora:`, qualityScore.suggestions);
     }
     
-    console.log("✅ Contenido completo mejorado generado con éxito");
+    console.log("✅ Contenido completo mejorado y validado generado");
     
     return {
       content: processedContent,
-      qualityScore
+      qualityScore,
+      validationResult: scriptValidation
     };
   }
 }
