@@ -1,4 +1,6 @@
 import { HookGenerationParams, CompleteContentGenerationParams } from '../ai-generator';
+import { generateHookTypePrompt } from './enhanced-hook-types';
+import { getContentTemplateForType, getDayThemeRecommendation, LIMA_CONTENT_TEMPLATES } from './lima-content-templates';
 import { 
   getDistrictData, 
   getRelevantSuccessStories, 
@@ -15,9 +17,12 @@ export class EnhancedPromptBuilder {
     const successStories = getRelevantSuccessStories(params.audience, districtData?.name);
     const marketInsights = getRelevantMarketInsights(params.topic);
     const trends = getRelevantTrends(params.audience);
+    const template = getContentTemplateForType(params.type);
+    const todayTheme = getDayThemeRecommendation(new Date().getDay());
     
     const contextualData = this.buildContextualData(districtData, successStories, marketInsights, trends);
     const restrictions = ContentValidator.getPromptRestrictions();
+    const hookTypeGuide = generateHookTypePrompt(params.type);
     
     return `
 Eres un experto en marketing inmobiliario digital con vasta experiencia en el mercado de Lima, Perú. Tu objetivo es crear hooks virales y de alto impacto para redes sociales, adaptados al público peruano y al sector inmobiliario emergente.
@@ -27,14 +32,29 @@ ${restrictions}
 **DATOS CONTEXTUALES DE LIMA 2024-2025:**
 ${contextualData}
 
+${hookTypeGuide}
+
+**TEMPLATE SUGERIDO:** ${template ? template.name : 'Genérico'}
+${template ? `Estructura: ${template.structure.join(' → ')}` : ''}
+
+**TEMA DEL DÍA:** ${todayTheme?.name} - ${todayTheme?.focus}
+
+**DIFERENCIACIÓN CRÍTICA POR TIPO:**
+
+**EDUCATIVO vs OTROS:**
+- EDUCATIVO: "Llevo X años... Estos datos/errores..." (Credencial + Experiencia + Enseñanza)
+- SHOCK: "X% de personas comete este error..." (Estadística sorprendente + Consecuencia)
+- POLÉMICO: "Las inmobiliarias NO quieren que sepas..." (Crítica a industria + Insider knowledge)
+
 **Instrucciones Generales:**
 1. Genera solo el HOOK inicial para un contenido de video corto.
 2. El hook debe ser IMPACTANTE, conciso (máximo ${ContentValidator['config'].maxHookWords} palabras), y generar curiosidad o urgencia.
 3. Debe ser gramaticalmente impecable en español de Lima, utilizando un lenguaje que resuene con la audiencia objetivo.
 4. UTILIZA los datos contextuales proporcionados para hacer el hook más específico y relevante.
-5. La audiencia objetivo es CRÍTICA. El hook debe hablarles directamente o apelar a sus intereses/problemas.
-6. Integra el tema principal de forma clara y atractiva.
-7. USA SOLO vocabulario profesional inmobiliario aprobado.
+5. SIGUE ESTRICTAMENTE las características del tipo de gancho "${params.type}".
+6. La audiencia objetivo es CRÍTICA. El hook debe hablarles directamente o apelar a sus intereses/problemas.
+7. Integra el tema principal de forma clara y atractiva.
+8. USA SOLO vocabulario profesional inmobiliario aprobado.
 
 **Variables del Contexto:**
 - Plataforma: ${params.platform}
@@ -48,11 +68,6 @@ ${contextualData}
 
 **GUÍA ESPECÍFICA PARA OBJETIVO DE VIRALIDAD:**
 ${this.getViralityGuide(params.viralScoreTarget)}
-
----
-
-**GUÍA ESPECÍFICA PARA TIPOS DE GANCHO:**
-${this.getHookTypeGuide(params.type)}
 
 ---
 
@@ -74,7 +89,15 @@ ${this.getEnhancedExampleHook(params.type, params.viralScoreTarget, districtData
 
 ---
 
-**Ahora, genera un hook único, impactante y específico usando todos estos parámetros y datos contextuales. RECUERDA: Máximo ${ContentValidator['config'].maxHookWords} palabras, vocabulario profesional, sin palabras prohibidas. Responde SOLO con el hook, sin explicaciones adicionales.**
+**VALIDACIÓN FINAL:** 
+Antes de generar, verifica que el hook:
+✅ Cumple con las características ESPECÍFICAS del tipo "${params.type}"
+✅ Se diferencia claramente de otros tipos de gancho
+✅ Usa datos contextuales de Lima cuando sea relevante
+✅ Máximo ${ContentValidator['config'].maxHookWords} palabras
+✅ Vocabulario profesional inmobiliario únicamente
+
+**Ahora, genera un hook único, impactante y específico usando todos estos parámetros y datos contextuales. RESPONDE SOLO con el hook, sin explicaciones adicionales.**
 
 Tema: ${params.topic}
 Audiencia: ${params.audience}
@@ -87,14 +110,26 @@ Contexto: ${params.context}
     const hashtags = getRelevantHashtags(districtData?.name, params.topic);
     const successStories = getRelevantSuccessStories(params.audience, districtData?.name);
     const marketInsights = getRelevantMarketInsights(params.topic);
+    const template = getContentTemplateForType(params.type);
     const restrictions = ContentValidator.getPromptRestrictions();
     
     return `
-Eres un experto en marketing inmobiliario digital y creador de contenido viral en Lima, Perú. Tu tarea es expandir el siguiente HOOK en un contenido completo para ${params.platform}, incluyendo script, elementos visuales, CTA, estrategia de distribución y métricas proyectadas.
+Eres un experto en marketing inmobiliario digital y creador de contenido viral en Lima, Perú. Tu tarea es expandir el siguiente HOOK en un contenido completo para ${params.platform}, siguiendo la estructura de templates probados.
 
 ${restrictions}
 
 **HOOK YA GENERADO:** "${params.hook}"
+
+**TEMPLATE SUGERIDO:** ${template ? template.name : 'Estructura Genérica'}
+${template ? `
+**Estructura del Template:**
+${template.structure.map((step, i) => `${i + 1}. ${step}`).join('\n')}
+
+**Ejemplo de aplicación:**
+Hook: ${template.examples.hook}
+Puntos clave: ${template.examples.keyPoints.join(', ')}
+CTA: ${template.examples.cta}
+` : ''}
 
 **DATOS CONTEXTUALES RELEVANTES:**
 ${this.buildContextualData(districtData, successStories, marketInsights, [])}
@@ -115,7 +150,7 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
 
 1. **Script Completo (150-${ContentValidator['config'].maxScriptWords} palabras):**
    - Debe ser una continuación lógica y fluida del HOOK.
-   - Estructura: Problema → Solución → Beneficios → Evidencia/Ejemplos → Llamada a la acción.
+   - ${template ? `Sigue la estructura del template ${template.name}` : 'Estructura: Problema → Solución → Beneficios → Evidencia/Ejemplos → Llamada a la acción.'}
    - Tono: Consistente con el tipo de gancho "${params.type}" y la plataforma ${params.platform}.
    - UTILIZA los datos contextuales específicos proporcionados (precios, proyectos, casos de éxito).
    - Incluye frases clave, datos relevantes sobre Lima (distritos, precios, tendencias, etc.).
@@ -127,9 +162,11 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
 2. **Elementos Visuales Sugeridos:**
    ${this.getPlatformVisualGuide(params.platform)}
    ${districtData ? `- Incluir imágenes específicas de ${districtData.name}: ${districtData.characteristics.join(', ')}` : ''}
+   ${template ? `- Elementos visuales del template: ${template.structure.join(', ')}` : ''}
 
 3. **CTA Optimizado (Llamada a la Acción):**
    - Debe ser ÚNICO, CLARO y ORIENTADO A LA ACCIÓN.
+   - ${template ? `Inspirado en: "${template.examples.cta}"` : 'CTA genérico optimizado'}
    - Adapta el CTA a ${params.platform} y al objetivo de viralidad ${params.viralScoreTarget}.
    - Sugiere dónde colocar el CTA (al final del video, en la descripción, link en bio).
    - Ejemplos efectivos: "Agenda asesoría gratuita", "Descarga la guía de distritos 2025", "Envíanos un DM para más info".
@@ -276,23 +313,6 @@ ${marketInsights.length > 0 ? `- Insight clave: ${marketInsights[0].insight}` : 
     } else {
       return `**9-10 (Viral Masivo):** Lenguaje muy ENÉRGICO, que desafíe la norma, que genere asombro, urgencia o conocimiento exclusivo. Usa emojis profesionales para enfatizar. Ejemplo: "Lima 2025: 3 distritos con potencial de revalorización que pocos conocen 🤫 ¿Te quedarás sin esta oportunidad?"`;
     }
-  }
-
-  private static getHookTypeGuide(type: string): string {
-    const guides = {
-      'Autoridad': 'El hook debe posicionarte como un experto. Utiliza frases que demuestren conocimiento profundo, proyecciones, datos o consejos directos. Ej: "Como experto en el mercado limeño...", "Basado en mis años de experiencia...", "Te revelo las tendencias de..."',
-      'Controversial': 'El hook debe desafiar una creencia común o una práctica estándar. Usa un tono provocador que invite al debate. Ej: "Olvídate de X, la verdad es Y...", "¿Todavía piensas en Z? Estás perdiendo oportunidades..."',
-      'Shock': 'El hook debe contener una afirmación impactante, una estadística sorprendente o una revelación inesperada que capture la atención de inmediato. Ej: "Nadie te ha dicho esto sobre...", "El 90% de los compradores cometen este error considerable..."',
-      'Predictivo': 'El hook debe anticipar el futuro, revelar tendencias o hacer una proyección sobre el mercado inmobiliario. Ej: "Esto pasará en Lima en 2025...", "Prepárate para la próxima ola de..."',
-      'Storytelling': 'Aunque el hook es corto, debe insinuar una historia o un problema narrativo. Ej: "Lo que aprendí al comprar mi primera propiedad...", "Mi cliente casi pierde su oportunidad por esto..."',
-      'Reto': 'El hook debe desafiar directamente a la audiencia o plantearles una meta. Ej: "¿Tienes la visión para ver esta oportunidad?", "Te reto a encontrar algo mejor que..."',
-      'Polemico': 'Similar a controversial, pero con un matiz más de confrontación o crítica a algo establecido. Ej: "La gran verdad oculta de los bancos sobre...", "Por qué las inmobiliarias NO quieren que sepas..."',
-      'Educativo': 'El hook debe prometer una enseñanza clara y directa. Ej: "Aprende los 3 pasos para...", "Guía rápida para entender..."',
-      'Testimonial': 'Aunque sin un testimonio completo, el hook puede insinuar una experiencia positiva o un resultado. Ej: "Así logré X...", "Lo que mis clientes me agradecen de..."',
-      'Behind-Scenes': 'El hook debe prometer una mirada interna o exclusiva. Ej: "Lo que no ves de los proyectos inmobiliarios...", "Te llevo tras bambalinas..."'
-    };
-
-    return guides[type] || guides['Educativo'];
   }
 
   private static getPlatformVisualGuide(platform: string): string {
