@@ -1,27 +1,29 @@
 
 import { HookGenerationParams, CompleteContentGenerationParams } from '../ai-generator';
 import { generateHookTypePrompt } from './enhanced-hook-types';
-import { getContentTemplateForType, getDayThemeRecommendation, LIMA_CONTENT_TEMPLATES } from './lima-content-templates';
+import { getContentTemplateForType, getDayThemeRecommendation } from './lima-content-templates';
 import { 
-  getDistrictData, 
   getRelevantSuccessStories, 
   getRelevantHashtags, 
   getRelevantMarketInsights,
   getRelevantTrends 
 } from '../local-insights';
 import { ContentValidator } from './content-validator';
+import { ContextDataBuilder } from './prompt-builders/context-data-builder';
+import { ViralityGuideBuilder } from './prompt-builders/virality-guide-builder';
+import { PlatformGuideBuilder } from './prompt-builders/platform-guide-builder';
 
 export class EnhancedPromptBuilder {
   static buildEnhancedHookPrompt(params: HookGenerationParams): string {
     // Obtener datos contextuales relevantes
-    const districtData = this.extractDistrictFromTopic(params.topic);
+    const districtData = ContextDataBuilder.extractDistrictFromTopic(params.topic);
     const successStories = getRelevantSuccessStories(params.audience, districtData?.name);
     const marketInsights = getRelevantMarketInsights(params.topic);
     const trends = getRelevantTrends(params.audience);
     const template = getContentTemplateForType(params.type);
     const todayTheme = getDayThemeRecommendation(new Date().getDay());
     
-    const contextualData = this.buildContextualData(districtData, successStories, marketInsights, trends);
+    const contextualData = ContextDataBuilder.buildContextualData(districtData, successStories, marketInsights, trends);
     const restrictions = ContentValidator.getPromptRestrictions();
     const hookTypeGuide = generateHookTypePrompt(params.type);
     
@@ -68,12 +70,12 @@ ${template ? `Estructura: ${template.structure.join(' → ')}` : ''}
 ---
 
 **GUÍA ESPECÍFICA PARA OBJETIVO DE VIRALIDAD:**
-${this.getViralityGuide(params.viralScoreTarget)}
+${ViralityGuideBuilder.getViralityGuide(params.viralScoreTarget)}
 
 ---
 
 **INSTRUCCIONES ESPECIALES BASADAS EN DATOS LOCALES:**
-${this.getLocalDataInstructions(districtData, successStories, marketInsights)}
+${ContextDataBuilder.getLocalDataInstructions(districtData, successStories, marketInsights)}
 
 ---
 
@@ -86,7 +88,7 @@ ${this.getLocalDataInstructions(districtData, successStories, marketInsights)}
 
 **Ejemplo de Hook Exitoso para Referencia:**
 Para el tipo "${params.type}" con viralidad ${params.viralScoreTarget}, considerando los datos locales:
-${this.getEnhancedExampleHook(params.type, params.viralScoreTarget, districtData)}
+${ViralityGuideBuilder.getEnhancedExampleHook(params.type, params.viralScoreTarget, districtData)}
 
 ---
 
@@ -107,7 +109,7 @@ Contexto: ${params.context}
   }
 
   static buildEnhancedCompleteContentPrompt(params: CompleteContentGenerationParams): string {
-    const districtData = this.extractDistrictFromTopic(params.topic);
+    const districtData = ContextDataBuilder.extractDistrictFromTopic(params.topic);
     const hashtags = getRelevantHashtags(districtData?.name, params.topic);
     const successStories = getRelevantSuccessStories(params.audience, districtData?.name);
     const marketInsights = getRelevantMarketInsights(params.topic);
@@ -133,7 +135,7 @@ CTA: ${template.examples.cta}
 ` : ''}
 
 **DATOS CONTEXTUALES RELEVANTES:**
-${this.buildContextualData(districtData, successStories, marketInsights, [])}
+${ContextDataBuilder.buildContextualData(districtData, successStories, marketInsights, [])}
 
 **Hashtags Sugeridos:** ${hashtags.join(', ')}
 
@@ -174,12 +176,12 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
    - Tono: Consistente con el tipo de gancho "${params.type}" y la plataforma ${params.platform}.
    - UTILIZA los datos contextuales específicos proporcionados (precios, proyectos, casos de éxito).
    - El agente debe posicionarse como LA SOLUCIÓN al problema presentado.
-   - Incluye casos específicos SIN usar "madre" o referencias familiares irrelevantes.
+   - Incluye casos específicos SIN usar "cliente" o referencias familiares irrelevantes.
    - USA SOLO vocabulario profesional inmobiliario aprobado.
    - TERMINA con CTA donde TÚ eres quien ayuda, no donde envías a "buscar ayuda".
 
 2. **Elementos Visuales Sugeridos:**
-   ${this.getPlatformVisualGuide(params.platform)}
+   ${PlatformGuideBuilder.getPlatformVisualGuide(params.platform)}
    ${districtData ? `- Incluir imágenes específicas de ${districtData.name}: ${districtData.characteristics.join(', ')}` : ''}
    ${template ? `- Elementos visuales del template: ${template.structure.join(', ')}` : ''}
 
@@ -191,18 +193,18 @@ ${this.buildContextualData(districtData, successStories, marketInsights, [])}
    - PROHIBIDO: "busca", "investiga", "consulta con otros", "analiza por tu cuenta"
 
 4. **Estrategia de Distribución:**
-   **Horarios:** ${this.getPlatformTimingGuide(params.platform)}
+   **Horarios:** ${PlatformGuideBuilder.getPlatformTimingGuide(params.platform)}
    **Hashtags:** ${hashtags.join(' ')}
    **Estrategias de Crecimiento:** Menciona técnicas específicas para ${params.platform} que aumenten el alcance.
 
 5. **Métricas Proyectadas:**
-   ${this.getMetricsGuide(params.viralScoreTarget, params.platform)}
+   ${ViralityGuideBuilder.getMetricsGuide(params.viralScoreTarget, params.platform)}
 
 **Contexto Específico de Lima 2025:**
-${this.buildDetailedLimaContext(districtData, marketInsights)}
+${ContextDataBuilder.buildDetailedLimaContext(districtData, marketInsights)}
 
 **RECORDATORIO FINAL:**
-- NUNCA uses "madre", "busca asesoría", "investiga", "consulta con expertos"
+- NUNCA uses "busca asesoría", "investiga", "consulta con expertos"
 - SIEMPRE posiciona al agente como LA SOLUCIÓN
 - Casos de éxito específicos: "Un joven profesional", "Una pareja", "Un inversionista"
 - CTA debe generar acción HACIA el agente, no hacia otros
@@ -221,156 +223,5 @@ Responde ÚNICAMENTE con el JSON válido en esta estructura exacta:
   }
 }
     `;
-  }
-
-  private static extractDistrictFromTopic(topic: string) {
-    const topicLower = topic.toLowerCase();
-    const districts = ['miraflores', 'san_isidro', 'surco', 'pueblo_libre', 'brena', 'jesus_maria', 'magdalena'];
-    
-    for (const district of districts) {
-      if (topicLower.includes(district.replace('_', ' ')) || topicLower.includes(district)) {
-        return getDistrictData(district);
-      }
-    }
-    return null;
-  }
-
-  private static buildContextualData(districtData: any, successStories: any[], marketInsights: any[], trends: string[]): string {
-    let context = '';
-    
-    if (districtData) {
-      context += `\n**Datos del Distrito ${districtData.name}:**\n`;
-      context += `- Precio promedio por m²: S/${districtData.price_m2.toLocaleString()}\n`;
-      context += `- Crecimiento proyectado: ${districtData.growth_percentage}%\n`;
-      context += `- Rentabilidad anual: ${districtData.rental_yield}%\n`;
-      context += `- Proyectos de infraestructura: ${districtData.infrastructure_projects.join(', ')}\n`;
-      context += `- Características: ${districtData.characteristics.join(', ')}\n`;
-    }
-    
-    if (successStories.length > 0) {
-      context += `\n**Casos de Éxito Relevantes:**\n`;
-      successStories.slice(0, 2).forEach(story => {
-        context += `- ${story.client_type} en ${story.district}: ROI ${story.roi_percentage}% en ${story.timeframe_months} meses\n`;
-      });
-    }
-    
-    if (marketInsights.length > 0) {
-      context += `\n**Insights de Mercado:**\n`;
-      marketInsights.slice(0, 2).forEach(insight => {
-        context += `- ${insight.insight}\n`;
-      });
-    }
-    
-    if (trends.length > 0) {
-      context += `\n**Tendencias 2025:**\n`;
-      trends.forEach(trend => {
-        context += `- ${trend}\n`;
-      });
-    }
-    
-    return context;
-  }
-
-  private static buildDetailedLimaContext(districtData: any, marketInsights: any[]): string {
-    return `
-- Distritos en crecimiento: Pueblo Libre, Breña, Jesús María, Magdalena
-- Precios promedio por m²: Miraflores (S/8,500), San Isidro (S/9,200), Surco (S/6,800)
-- Tendencias: Espacios híbridos trabajo-vivienda, sostenibilidad, conectividad
-- Jerga local: "jalado", "bacán", "chévere", "pata" (amigo)
-- Referencias culturales: Metro de Lima, tráfico de la Panamericana, fin de semana en Asia
-${districtData ? `- Datos específicos de ${districtData.name}: ${districtData.characteristics.join(', ')}` : ''}
-${marketInsights.length > 0 ? `- Insight clave: ${marketInsights[0].insight}` : ''}
-    `;
-  }
-
-  private static getLocalDataInstructions(districtData: any, successStories: any[], marketInsights: any[]): string {
-    let instructions = '';
-    
-    if (districtData) {
-      instructions += `- Menciona el precio específico de S/${districtData.price_m2.toLocaleString()} por m² en ${districtData.name}\n`;
-      instructions += `- Destaca el crecimiento proyectado del ${districtData.growth_percentage}%\n`;
-      instructions += `- Usa las características específicas: ${districtData.characteristics.slice(0, 2).join(', ')}\n`;
-    }
-    
-    if (successStories.length > 0) {
-      instructions += `- Puedes referenciar casos como: "${successStories[0].client_type} logró ${successStories[0].roi_percentage}% ROI"\n`;
-    }
-    
-    if (marketInsights.length > 0) {
-      instructions += `- Incorpora este insight: "${marketInsights[0].insight}"\n`;
-    }
-    
-    return instructions || '- Usa datos generales del mercado limeño';
-  }
-
-  private static getEnhancedExampleHook(type: string, viralScore: number, districtData: any): string {
-    const baseExamples = {
-      'Autoridad': viralScore >= 8 
-        ? `Lima 2025: 3 distritos con alto potencial de revalorización 📈` 
-        : `Como experto inmobiliario, te revelo los 3 distritos con mayor potencial 2025`,
-      'Controversial': viralScore >= 8 
-        ? `¿Sigues pensando que Miraflores es la mejor inversión? 🤔` 
-        : `Olvídate de Miraflores, estos 3 distritos son mejores inversiones`,
-      'Shock': viralScore >= 8 
-        ? `95% de limeños NO conoce estos distritos de alta revalorización 😱` 
-        : `El error que cometen 9 de cada 10 compradores en Lima`,
-      'Predictivo': viralScore >= 8 
-        ? `Crecimiento inmobiliario 2025: 3 distritos que se revalorizarán significativamente` 
-        : `Estos 3 distritos tendrán el mayor crecimiento en 2025`
-    };
-    
-    let example = baseExamples[type] || "Hook optimizado para tu tipo de contenido y nivel de viralidad";
-    
-    if (districtData) {
-      example = example.replace('3 distritos', `${districtData.name} y 2 distritos más`);
-    }
-    
-    return example;
-  }
-
-  private static getViralityGuide(viralScore: number): string {
-    if (viralScore <= 3) {
-      return `**1-3 (Bajo Impacto):** Tono informativo, directo, claro. Enfocado en la utilidad o dato específico. Menos emocional. Ejemplo: "3 distritos de Lima con mejor proyección inmobiliaria 2025"`;
-    } else if (viralScore <= 6) {
-      return `**4-6 (Moderado Impacto):** Un poco más de emoción o una pregunta que invite a la reflexión. Introduce un elemento de novedad o beneficio. Ejemplo: "¿Conoces estos 3 distritos que van a cambiar en 2025?"`;
-    } else if (viralScore <= 8) {
-      return `**7-8 (Alto Impacto):** Lenguaje más enérgico, uso de preguntas retóricas, misterio, o una promesa clara. Juega con la emoción y la curiosidad. Ejemplo: "¡Los 3 distritos de Lima que se revalorizarán significativamente en 2025!"`;
-    } else {
-      return `**9-10 (Viral Masivo):** Lenguaje muy ENÉRGICO, que desafíe la norma, que genere asombro, urgencia o conocimiento exclusivo. Usa emojis profesionales para enfatizar. Ejemplo: "Lima 2025: 3 distritos con potencial de revalorización que pocos conocen 🤫 ¿Te quedarás sin esta oportunidad?"`;
-    }
-  }
-
-  private static getPlatformVisualGuide(platform: string): string {
-    const guides = {
-      'TikTok': 'Transiciones rápidas, música trending, texto overlay dinámico, tomas verticales, cambios de escenario cada 3-5 segundos, mapas animados de Lima, gráficos simples con números grandes.',
-      'Instagram': 'Reels dinámicos con transiciones suaves, carruseles informativos, stories interactivas, imágenes de alta calidad de propiedades, antes/después, gráficos estéticamente atractivos.',
-      'YouTube': 'Tomas más largas y profesionales, gráficos detallados, B-roll de propiedades, entrevistas, mapas interactivos, animaciones explicativas, intro y outro consistentes.',
-      'LinkedIn': 'Gráficos profesionales e informativos, datos y estadísticas, videos de alta calidad con presentador, infografías, testimoniales de clientes, casos de estudio visuales.'
-    };
-
-    return guides[platform] || guides['Instagram'];
-  }
-
-  private static getPlatformTimingGuide(platform: string): string {
-    const guides = {
-      'TikTok': 'Mejores horarios en Lima: 7 PM - 10 PM L-V (jóvenes post-trabajo), 1 PM - 4 PM S-D (tiempo libre), 11 AM - 1 PM (pausa almuerzo).',
-      'Instagram': 'Óptimo: 6 PM - 9 PM L-V (engagement máximo), 10 AM - 12 PM S-D (navegación relajada), evitar 2 PM - 4 PM (siesta).',
-      'YouTube': 'Prime time: 8 PM - 11 PM todos los días (contenido largo), 12 PM - 2 PM (almuerzo), fines de semana 3 PM - 6 PM.',
-      'LinkedIn': 'Horarios laborales: 8 AM - 10 AM (inicio día), 12 PM - 2 PM (almuerzo), 5 PM - 7 PM (final jornada), evitar fines de semana.'
-    };
-
-    return guides[platform] || guides['Instagram'];
-  }
-
-  private static getMetricsGuide(viralScore: number, platform: string): string {
-    if (viralScore <= 3) {
-      return 'Haz una estimación conservadora: Views: 1k-5k | Engagement: 3-6% | Shares: 0.2-1%. Justifica: "Contenido informativo con audiencia específica interesada en el tema."';
-    } else if (viralScore <= 6) {
-      return 'Estimación moderada: Views: 5k-20k | Engagement: 5-8% | Shares: 1-3%. Justifica: "Contenido con elementos de curiosidad que invita a la interacción."';
-    } else if (viralScore <= 8) {
-      return 'Estimación alta: Views: 20k-80k | Engagement: 8-12% | Shares: 3-6%. Justifica: "Hook impactante y tema relevante que genera discusión y compartidos."';
-    } else {
-      return 'Estimación viral: Views: 50k-300k+ | Engagement: 10-20% | Shares: 5-15%. Justifica: "Contenido controvertial/impactante con alto potencial viral por su naturaleza disruptiva."';
-    }
   }
 }

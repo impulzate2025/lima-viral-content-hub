@@ -5,6 +5,7 @@ import { GeminiClient } from './ai/gemini-client';
 import { ResponseProcessor } from './ai/response-processor';
 import { ContentQualityValidator } from './content-quality-validator';
 import { ContentValidator } from './ai/content-validator';
+import { ValidationClient } from './validation-client';
 import { HookGenerationParams, CompleteContentGenerationParams, GeneratedContent } from './ai-generator';
 
 export class EnhancedAIContentGenerator {
