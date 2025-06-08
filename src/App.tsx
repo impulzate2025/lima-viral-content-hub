@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,13 +8,21 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ValidationDashboard from "./pages/ValidationDashboard";
 
-const queryClient = new QueryClient();
+// Create QueryClient with proper configuration to avoid React hooks issues
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster /> {/* Para notificaciones de shadcn/ui */}
-      <Sonner /> {/* Para notificaciones más avanzadas como "sonner" */}
+      <Toaster />
+      <Sonner />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
