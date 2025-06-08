@@ -1,6 +1,7 @@
-
-import { Button } from "@/components/ui/button";
-import { Plus, Upload, Database } from "lucide-react";
+import { Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/button";
+import { PlusCircle, Upload, Database, MoreHorizontal, Brain } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 interface MainHeaderProps {
   contentsCount: number;
@@ -15,35 +16,66 @@ export function MainHeader({
   onImportExcel, 
   onLoadSampleData 
 }: MainHeaderProps) {
+  const navigate = useNavigate();
+
   return (
-    <header className="border-b bg-white">
+    <header className="bg-background border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-gradient-to-r from-[#4ECDC4] to-[#44A08D] rounded-lg flex items-center justify-center text-white font-bold">
-              🏠
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Viral Content Manager</h1>
-              <p className="text-sm text-muted-foreground">Real Estate Lima</p>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <h1 className="text-2xl font-bold text-foreground">ContentAI Pro</h1>
+              <Badge variant="secondary" className="text-xs">
+                {contentsCount} contenidos
+              </Badge>
             </div>
           </div>
-          
-          <div className="flex gap-2">
+
+          <nav className="hidden md:flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/')}
+              className="text-sm"
+            >
+              Dashboard
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/validation')}
+              className="text-sm"
+            >
+              Centro de Inteligencia
+            </Button>
+          </nav>
+
+          <div className="flex items-center space-x-2">
             <Button onClick={onNewContent} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <PlusCircle className="mr-2 h-4 w-4" />
               Nuevo
             </Button>
-            <Button onClick={onImportExcel} variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Importar
-            </Button>
-            {contentsCount === 0 && (
-              <Button onClick={onLoadSampleData} variant="outline" size="sm">
-                <Database className="h-4 w-4 mr-2" />
-                Datos Prueba
-              </Button>
-            )}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={onImportExcel}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Importar Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onLoadSampleData}>
+                  <Database className="mr-2 h-4 w-4" />
+                  Datos de Ejemplo
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/validation')}>
+                  <Brain className="mr-2 h-4 w-4" />
+                  Centro de Inteligencia
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
