@@ -4,18 +4,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CalendarDays, Plus, Clock, Target, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useContentStore } from '@/stores/content-store';
-import { ContentItem } from '@/types';
+import { ContentItem, Platform, ContentType } from '@/types';
 
 interface ContentPlan {
   id: string;
   date: Date;
-  contentId?: string; // Referencia al contenido real
+  contentId?: string;
   platform: string;
   type: string;
   topic: string;
@@ -24,6 +24,19 @@ interface ContentPlan {
   status: 'planned' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
 }
+
+const PLATFORMS = ['TikTok', 'Instagram', 'YouTube', 'LinkedIn', 'Facebook', 'Twitter'];
+const CONTENT_TYPES = ['Educativo', 'Testimonial', 'Controversial', 'Predictivo', 'Behind-Scenes', 'Tutorial'];
+const TOPICS_PREDEFINIDOS = [
+  '3 distritos emergentes Lima 2025',
+  '¿Por qué Miraflores ya no es la mejor inversión?',
+  'Secretos de inversión inmobiliaria',
+  'Errores comunes al comprar departamento',
+  'Tendencias del mercado inmobiliario',
+  'Consejos para primera compra',
+  'Zonas con mayor plusvalía',
+  'Análisis de precios por distrito'
+];
 
 export function InteractiveCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -40,7 +53,6 @@ export function InteractiveCalendar() {
 
   const { contents } = useContentStore();
 
-  // Cargar planes de contenido de ejemplo
   useEffect(() => {
     const examplePlans: ContentPlan[] = [
       {
@@ -91,8 +103,8 @@ export function InteractiveCalendar() {
         planData = {
           ...planData,
           contentId: selectedContentId,
-          platform: selectedContent.platform,
-          type: selectedContent.content_type,
+          platform: Array.isArray(selectedContent.platform) ? selectedContent.platform[0] : selectedContent.platform,
+          type: selectedContent.type,
           topic: selectedContent.hook,
           hook: selectedContent.hook,
           script: selectedContent.script
@@ -156,135 +168,219 @@ export function InteractiveCalendar() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5" />
-            Calendario de Contenido Interactivo
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <CalendarDays className="h-6 w-6" />
+            📅 Calendario de Contenido Súper Fácil
           </CardTitle>
-          <CardDescription>
-            Planifica, organiza y arrastra tu contenido en el calendario. Conecta contenidos existentes o crea nuevos.
+          <CardDescription className="text-lg">
+            🎯 Solo haz clic y arrastra. ¡Tan fácil como usar WhatsApp!
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Calendario principal */}
             <div className="lg:col-span-2">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md border"
-                modifiers={{
-                  hasContent: getDatesWithContent()
-                }}
-                modifiersStyles={{
-                  hasContent: { backgroundColor: '#dbeafe', fontWeight: 'bold' }
-                }}
-                onDayClick={(date) => {
-                  setSelectedDate(date);
-                }}
-              />
-              
-              {/* Leyenda */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-100 rounded"></div>
-                  <span className="text-sm">Días con contenido</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span className="text-sm">Completado</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span className="text-sm">En progreso</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gray-400 rounded"></div>
-                  <span className="text-sm">Planificado</span>
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="rounded-md border-2 border-blue-200 bg-white shadow-lg"
+                  modifiers={{
+                    hasContent: getDatesWithContent()
+                  }}
+                  modifiersStyles={{
+                    hasContent: { backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold' }
+                  }}
+                  onDayClick={(date) => {
+                    setSelectedDate(date);
+                  }}
+                />
+                
+                {/* Leyenda más visual */}
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow">
+                    <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                    <span className="font-medium">📅 Días con contenido</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow">
+                    <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <span className="font-medium">✅ Completado</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow">
+                    <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                    <span className="font-medium">🔄 En progreso</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow">
+                    <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
+                    <span className="font-medium">📝 Planificado</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Panel lateral */}
-            <div className="space-y-4">
+            {/* Panel lateral mejorado */}
+            <div className="space-y-6">
               {selectedDate && (
-                <Card>
+                <Card className="bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-200">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">
-                      {format(selectedDate, 'EEEE d MMMM', { locale: es })}
+                    <CardTitle className="text-xl text-center">
+                      📅 {format(selectedDate, 'EEEE d MMMM', { locale: es })}
                     </CardTitle>
                     <Dialog open={isAddingContent} onOpenChange={setIsAddingContent}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="w-full">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Agregar Contenido
+                        <Button size="lg" className="w-full text-lg py-6 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600">
+                          <Plus className="mr-2 h-6 w-6" />
+                          ➕ Agregar Contenido Fácil
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md">
+                      <DialogContent className="max-w-lg">
                         <DialogHeader>
-                          <DialogTitle>Nuevo Contenido para el Calendario</DialogTitle>
+                          <DialogTitle className="text-2xl text-center">
+                            🎯 Nuevo Contenido - ¡Súper Fácil!
+                          </DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="useExisting"
-                              checked={useExistingContent}
-                              onChange={(e) => setUseExistingContent(e.target.checked)}
-                            />
-                            <label htmlFor="useExisting" className="text-sm">
-                              Usar contenido existente
-                            </label>
+                        <div className="space-y-6 p-4">
+                          {/* Opción simple: usar contenido existente */}
+                          <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                            <div className="flex items-center space-x-3 mb-4">
+                              <input
+                                type="checkbox"
+                                id="useExisting"
+                                checked={useExistingContent}
+                                onChange={(e) => setUseExistingContent(e.target.checked)}
+                                className="w-5 h-5"
+                              />
+                              <label htmlFor="useExisting" className="text-lg font-medium">
+                                📋 Usar contenido que ya tienes
+                              </label>
+                            </div>
+
+                            {useExistingContent && (
+                              <Select value={selectedContentId} onValueChange={setSelectedContentId}>
+                                <SelectTrigger className="w-full text-lg py-6">
+                                  <SelectValue placeholder="🔍 Elige tu contenido..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {contents.map(content => (
+                                    <SelectItem key={content.id} value={content.id} className="text-base py-3">
+                                      📝 {content.hook.substring(0, 60)}...
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </div>
 
-                          {useExistingContent ? (
-                            <div>
-                              <label className="text-sm font-medium">Seleccionar contenido:</label>
-                              <select
-                                value={selectedContentId}
-                                onChange={(e) => setSelectedContentId(e.target.value)}
-                                className="w-full p-2 border rounded mt-1"
-                              >
-                                <option value="">Selecciona un contenido...</option>
-                                {contents.map(content => (
-                                  <option key={content.id} value={content.id}>
-                                    {content.hook.substring(0, 50)}...
-                                  </option>
-                                ))}
-                              </select>
+                          {/* Opción crear nuevo - TODO MUY FÁCIL */}
+                          {!useExistingContent && (
+                            <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200 space-y-4">
+                              <h3 className="text-lg font-medium text-center">🆕 Crear contenido nuevo</h3>
+                              
+                              {/* Plataforma - Botones grandes */}
+                              <div>
+                                <label className="text-base font-medium mb-3 block">📱 ¿Dónde lo vas a publicar?</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {PLATFORMS.map(platform => (
+                                    <Button
+                                      key={platform}
+                                      type="button"
+                                      variant={newPlan.platform === platform ? "default" : "outline"}
+                                      onClick={() => setNewPlan(prev => ({ ...prev, platform }))}
+                                      className="text-base py-4"
+                                    >
+                                      {platform === 'TikTok' && '🎵'} 
+                                      {platform === 'Instagram' && '📸'} 
+                                      {platform === 'YouTube' && '📺'} 
+                                      {platform === 'LinkedIn' && '💼'} 
+                                      {platform === 'Facebook' && '👥'} 
+                                      {platform === 'Twitter' && '🐦'} 
+                                      {platform}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Tipo - Botones grandes */}
+                              <div>
+                                <label className="text-base font-medium mb-3 block">🎭 ¿Qué tipo de contenido?</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {CONTENT_TYPES.map(type => (
+                                    <Button
+                                      key={type}
+                                      type="button"
+                                      variant={newPlan.type === type ? "default" : "outline"}
+                                      onClick={() => setNewPlan(prev => ({ ...prev, type }))}
+                                      className="text-sm py-3"
+                                    >
+                                      {type === 'Educativo' && '🎓'} 
+                                      {type === 'Testimonial' && '⭐'} 
+                                      {type === 'Controversial' && '🔥'} 
+                                      {type === 'Predictivo' && '🔮'} 
+                                      {type === 'Behind-Scenes' && '🎬'} 
+                                      {type === 'Tutorial' && '📚'} 
+                                      {type}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Tema - Lista predefinida */}
+                              <div>
+                                <label className="text-base font-medium mb-3 block">💡 ¿De qué tema?</label>
+                                <Select value={newPlan.topic} onValueChange={(value) => setNewPlan(prev => ({ ...prev, topic: value }))}>
+                                  <SelectTrigger className="w-full text-base py-6">
+                                    <SelectValue placeholder="🎯 Elige un tema..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {TOPICS_PREDEFINIDOS.map(topic => (
+                                      <SelectItem key={topic} value={topic} className="text-base py-3">
+                                        💭 {topic}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
-                          ) : (
-                            <>
-                              <Input
-                                placeholder="Plataforma (TikTok, Instagram...)"
-                                value={newPlan.platform}
-                                onChange={(e) => setNewPlan(prev => ({ ...prev, platform: e.target.value }))}
-                              />
-                              <Input
-                                placeholder="Tipo (Educativo, Controversial...)"
-                                value={newPlan.type}
-                                onChange={(e) => setNewPlan(prev => ({ ...prev, type: e.target.value }))}
-                              />
-                              <Input
-                                placeholder="Tema del contenido"
-                                value={newPlan.topic}
-                                onChange={(e) => setNewPlan(prev => ({ ...prev, topic: e.target.value }))}
-                              />
-                            </>
                           )}
 
-                          <select
-                            value={newPlan.priority}
-                            onChange={(e) => setNewPlan(prev => ({ ...prev, priority: e.target.value as any }))}
-                            className="w-full p-2 border rounded"
-                          >
-                            <option value="low">Prioridad Baja</option>
-                            <option value="medium">Prioridad Media</option>
-                            <option value="high">Prioridad Alta</option>
-                          </select>
+                          {/* Prioridad - Botones grandes y coloridos */}
+                          <div>
+                            <label className="text-base font-medium mb-3 block">⚡ ¿Qué tan importante es?</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              <Button
+                                type="button"
+                                variant={newPlan.priority === 'low' ? "default" : "outline"}
+                                onClick={() => setNewPlan(prev => ({ ...prev, priority: 'low' }))}
+                                className="text-base py-4 bg-green-100 border-green-300 text-green-800 hover:bg-green-200"
+                              >
+                                🟢 Tranquilo
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={newPlan.priority === 'medium' ? "default" : "outline"}
+                                onClick={() => setNewPlan(prev => ({ ...prev, priority: 'medium' }))}
+                                className="text-base py-4 bg-yellow-100 border-yellow-300 text-yellow-800 hover:bg-yellow-200"
+                              >
+                                🟡 Normal
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={newPlan.priority === 'high' ? "default" : "outline"}
+                                onClick={() => setNewPlan(prev => ({ ...prev, priority: 'high' }))}
+                                className="text-base py-4 bg-red-100 border-red-300 text-red-800 hover:bg-red-200"
+                              >
+                                🔴 Urgente
+                              </Button>
+                            </div>
+                          </div>
                           
-                          <Button onClick={handleAddPlan} className="w-full">
-                            Agregar al Calendario
+                          <Button 
+                            onClick={handleAddPlan} 
+                            className="w-full text-xl py-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                            disabled={useExistingContent ? !selectedContentId : (!newPlan.platform || !newPlan.topic)}
+                          >
+                            ✨ ¡Agregar al Calendario!
                           </Button>
                         </div>
                       </DialogContent>
@@ -292,7 +388,7 @@ export function InteractiveCalendar() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div 
-                      className="space-y-2 min-h-[100px] border-2 border-dashed border-gray-200 rounded p-2"
+                      className="space-y-3 min-h-[120px] border-3 border-dashed border-blue-300 rounded-xl p-4 bg-white/50"
                       onDrop={(e) => handleDrop(e, selectedDate)}
                       onDragOver={handleDragOver}
                     >
@@ -301,23 +397,23 @@ export function InteractiveCalendar() {
                           key={plan.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, plan.id)}
-                          className={`p-3 rounded-lg border cursor-move hover:shadow-md transition-shadow ${getPriorityColor(plan.priority)}`}
+                          className={`p-4 rounded-xl border-2 cursor-move hover:shadow-lg transition-all transform hover:scale-105 ${getPriorityColor(plan.priority)}`}
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <Badge variant="outline" className="text-xs">
-                              {plan.platform}
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="outline" className="text-sm font-medium">
+                              📱 {plan.platform}
                             </Badge>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2">
                               {plan.contentId && (
-                                <ExternalLink className="w-3 h-3 text-blue-500" title="Contenido vinculado" />
+                                <ExternalLink className="w-4 h-4 text-blue-500" />
                               )}
-                              <div className={`w-2 h-2 rounded-full ${getStatusColor(plan.status)}`}></div>
+                              <div className={`w-3 h-3 rounded-full ${getStatusColor(plan.status)}`}></div>
                             </div>
                           </div>
-                          <p className="text-sm font-medium">{plan.type}</p>
-                          <p className="text-xs text-gray-600 line-clamp-2">{plan.topic}</p>
+                          <p className="font-medium text-sm">🎭 {plan.type}</p>
+                          <p className="text-sm text-gray-700 line-clamp-2">💭 {plan.topic}</p>
                           {plan.hook && (
-                            <p className="text-xs text-blue-600 mt-1 line-clamp-1">
+                            <p className="text-sm text-blue-600 mt-2 line-clamp-1">
                               📝 {plan.hook}
                             </p>
                           )}
@@ -325,9 +421,10 @@ export function InteractiveCalendar() {
                       ))}
                       
                       {getPlansForDate(selectedDate).length === 0 && (
-                        <div className="text-center text-gray-400 py-8">
-                          <Clock className="mx-auto h-8 w-8 mb-2" />
-                          <p className="text-sm">Arrastra contenido aquí o agrega nuevo</p>
+                        <div className="text-center text-gray-500 py-12">
+                          <Clock className="mx-auto h-12 w-12 mb-4 text-gray-400" />
+                          <p className="text-lg font-medium">🎯 ¡Arrastra contenido aquí!</p>
+                          <p className="text-base">o haz clic en "Agregar Contenido"</p>
                         </div>
                       )}
                     </div>
@@ -335,37 +432,37 @@ export function InteractiveCalendar() {
                 </Card>
               )}
 
-              {/* Resumen semanal */}
-              <Card>
+              {/* Resumen mejorado */}
+              <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Resumen
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    📊 Resumen Rápido
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Planificados</span>
-                      <Badge variant="outline">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow">
+                      <span className="text-base font-medium">📝 Planificados</span>
+                      <Badge variant="outline" className="text-lg px-3 py-1">
                         {contentPlans.filter(p => p.status === 'planned').length}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">En progreso</span>
-                      <Badge variant="outline">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow">
+                      <span className="text-base font-medium">🔄 En progreso</span>
+                      <Badge variant="outline" className="text-lg px-3 py-1">
                         {contentPlans.filter(p => p.status === 'in_progress').length}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Completados</span>
-                      <Badge variant="outline">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow">
+                      <span className="text-base font-medium">✅ Completados</span>
+                      <Badge variant="outline" className="text-lg px-3 py-1">
                         {contentPlans.filter(p => p.status === 'completed').length}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Vinculados</span>
-                      <Badge variant="outline">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow">
+                      <span className="text-base font-medium">🔗 Vinculados</span>
+                      <Badge variant="outline" className="text-lg px-3 py-1">
                         {contentPlans.filter(p => p.contentId).length}
                       </Badge>
                     </div>
